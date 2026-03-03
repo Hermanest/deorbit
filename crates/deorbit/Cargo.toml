@@ -1,0 +1,7 @@
+[package]
+name = "deorbit"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+deorbit_macro = { path = "../deorbit_macro" }
