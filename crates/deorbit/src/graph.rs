@@ -1,6 +1,6 @@
 use crate::binding::{Binding, TypeMeta};
 use crate::error::Error;
-use crate::graph::NodeState::{Visited, Visiting};
+use crate::graph::NodeState::{Unvisited, Visited, Visiting};
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 
@@ -17,23 +17,24 @@ struct Node {
 }
 
 pub fn resolve_order(bindings: Vec<Binding>) -> Result<Vec<Binding>, Error> {
-    let bindings: HashMap<_, _> = bindings
-        .into_iter()
-        .map(|x| {
-            (
-                x.ty,
-                Node {
-                    binding: RefCell::new(Some(x)),
-                    state: Cell::new(NodeState::Unvisited),
-                },
-            )
-        })
-        .collect();
-
     let mut ordered = Vec::new();
+    let mut mapped = HashMap::new();
 
-    for ty in bindings.keys() {
-        resolve_recursive(ty, &bindings, &mut ordered)?;
+    for binding in bindings {
+        let ty = binding.ty.clone();
+
+        let node = Node {
+            binding: RefCell::new(Some(binding)),
+            state: Cell::new(Unvisited),
+        };
+
+        if mapped.insert(ty, node).is_some() {
+            return Err(Error::Duplicated { type_meta: ty });
+        }
+    }
+
+    for ty in mapped.keys() {
+        resolve_recursive(ty, &mapped, &mut ordered)?;
     }
 
     Ok(ordered)
