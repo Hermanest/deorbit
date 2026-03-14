@@ -56,7 +56,7 @@ fn resolve_recursive(
 
     // Means that the node in the current stack
     if node.state.get() == Visiting {
-        return Err(Error::Circular { path: vec![] });
+        return Err(Error::Circular { path: vec![*ty] });
     }
 
     // Setting a temporary state so in case of a circular dependency
@@ -64,7 +64,16 @@ fn resolve_recursive(
     node.state.set(Visiting);
 
     for dep in node.binding.borrow().as_ref().unwrap().deps {
-        resolve_recursive(&dep, keyed, ordered)?;
+        let result = resolve_recursive(&dep, keyed, ordered);
+
+        result.map_err(|x| match x {
+            Error::Circular { mut path } => {
+                path.insert(0, *ty);
+                
+                Error::Circular { path }
+            }
+            x => x,
+        })?;
     }
 
     ordered.push(node.binding.take().unwrap());
