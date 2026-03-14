@@ -1,7 +1,6 @@
 use crate::binding::{Binding, TypeMeta};
 use crate::error::Error;
 use crate::graph::NodeState::{Visited, Visiting};
-use std::any::TypeId;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 
@@ -12,13 +11,21 @@ enum NodeState {
     Visited,
 }
 
+struct Node {
+    binding: RefCell<Option<Binding>>,
+    state: Cell<NodeState>,
+}
+
 pub fn resolve_order(bindings: Vec<Binding>) -> Result<Vec<Binding>, Error> {
     let bindings: HashMap<_, _> = bindings
         .into_iter()
         .map(|x| {
             (
                 x.ty,
-                (RefCell::new(Some(x)), Cell::new(NodeState::Unvisited)),
+                Node {
+                    binding: RefCell::new(Some(x)),
+                    state: Cell::new(NodeState::Unvisited),
+                },
             )
         })
         .collect();
@@ -34,33 +41,33 @@ pub fn resolve_order(bindings: Vec<Binding>) -> Result<Vec<Binding>, Error> {
 
 fn resolve_recursive(
     ty: &TypeMeta,
-    keyed: &HashMap<TypeMeta, (RefCell<Option<Binding>>, Cell<NodeState>)>,
+    keyed: &HashMap<TypeMeta, Node>,
     ordered: &mut Vec<Binding>,
 ) -> Result<(), Error> {
-    let (binding, state) = keyed.get(ty).ok_or_else(|| Error::Missing {
+    let node = keyed.get(ty).ok_or_else(|| Error::Missing {
         type_meta: ty.clone(),
     })?;
 
     // This node was already handled, ignoring
-    if state.get() == Visited {
+    if node.state.get() == Visited {
         return Ok(());
     }
 
     // Means that the node in the current stack
-    if state.get() == Visiting {
+    if node.state.get() == Visiting {
         return Err(Error::Circular { path: vec![] });
     }
 
     // Setting a temporary state so in case of a circular dependency
     // we'll see this node as being handled
-    state.set(Visiting);
+    node.state.set(Visiting);
 
-    for dep in binding.borrow().as_ref().unwrap().deps {
+    for dep in node.binding.borrow().as_ref().unwrap().deps {
         resolve_recursive(&dep, keyed, ordered)?;
     }
 
-    ordered.push(binding.take().unwrap());
-    state.set(Visited);
+    ordered.push(node.binding.take().unwrap());
+    node.state.set(Visited);
 
     Ok(())
 }
