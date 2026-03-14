@@ -1,4 +1,4 @@
-use crate::binding::Binding;
+use crate::binding::{Binding, TypeMeta};
 use crate::error::Error;
 use crate::graph::NodeState::{Visited, Visiting};
 use std::any::TypeId;
@@ -17,7 +17,7 @@ pub fn resolve_order(bindings: Vec<Binding>) -> Result<Vec<Binding>, Error> {
         .into_iter()
         .map(|x| {
             (
-                x.ty.type_id,
+                x.ty,
                 (RefCell::new(Some(x)), Cell::new(NodeState::Unvisited)),
             )
         })
@@ -33,12 +33,13 @@ pub fn resolve_order(bindings: Vec<Binding>) -> Result<Vec<Binding>, Error> {
 }
 
 fn resolve_recursive(
-    ty: &TypeId,
-    keyed: &HashMap<TypeId, (RefCell<Option<Binding>>, Cell<NodeState>)>,
+    ty: &TypeMeta,
+    keyed: &HashMap<TypeMeta, (RefCell<Option<Binding>>, Cell<NodeState>)>,
     ordered: &mut Vec<Binding>,
 ) -> Result<(), Error> {
-    // TODO: add missing service handling
-    let (binding, state) = keyed.get(ty).unwrap();
+    let (binding, state) = keyed.get(ty).ok_or_else(|| Error::Missing {
+        type_meta: ty.clone(),
+    })?;
 
     // This node was already handled, ignoring
     if state.get() == Visited {

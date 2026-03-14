@@ -1,27 +1,55 @@
 use crate::factory::{ManagedService, ServiceFactory};
-use std::any::{type_name, TypeId};
+use std::any::{TypeId, type_name};
 use std::cmp::Ordering;
+use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 
 #[derive(Debug)]
 pub struct Binding {
     pub ty: TypeMeta,
     pub lifetime: ServiceLifetime,
-    pub deps: &'static [TypeId],
+    pub deps: &'static [TypeMeta],
 }
 
-#[derive(Clone, Debug, Copy)]
+#[derive(Clone, Copy)]
 pub struct TypeMeta {
     pub type_id: TypeId,
-    pub type_name: &'static str,
+    pub type_name: MetaName,
+}
+
+#[derive(Clone, Copy)]
+enum MetaName {
+    Hardcoded(&'static str),
+    Dynamic(fn() -> &'static str),
 }
 
 impl TypeMeta {
-    pub fn of<T: 'static>() -> Self {
+    pub const fn of<T: 'static>() -> Self {
         Self {
             type_id: TypeId::of::<T>(),
-            type_name: type_name::<T>()
+            // Const type_name is unstable so using this workaround
+            type_name: MetaName::Dynamic(|| type_name::<T>()),
         }
+    }
+
+    pub const fn of_name<T: 'static>(name: &'static str) -> Self {
+        Self {
+            type_id: TypeId::of::<T>(),
+            type_name: MetaName::Hardcoded(name),
+        }
+    }
+
+    pub fn type_name(&self) -> &'static str {
+        match self.type_name {
+            MetaName::Hardcoded(x) => x,
+            MetaName::Dynamic(x) => x(),
+        }
+    }
+}
+
+impl Debug for TypeMeta {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.type_name())
     }
 }
 

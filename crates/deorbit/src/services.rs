@@ -2,8 +2,8 @@ use crate::binding::{ServiceLifetime, SingletonProvider};
 use crate::builder::ServicesBuilder;
 use crate::error::Error;
 use crate::factory::{ManagedService, ServiceFactory};
-use crate::graph;
-use std::any::{Any, TypeId};
+use crate::{TypeMeta, graph};
+use std::any::Any;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -12,7 +12,7 @@ pub type Service<T> = Arc<T>;
 /// A collection of services.
 #[derive(Debug)]
 pub struct Services {
-    services: HashMap<TypeId, ServiceEntry>,
+    services: HashMap<TypeMeta, ServiceEntry>,
 }
 
 /// A bound service.
@@ -52,7 +52,7 @@ impl Services {
         for binding in sorted_bindings {
             let entry = ServiceEntry::from(binding.lifetime, &services)?;
 
-            services.services.insert(binding.ty.type_id, entry);
+            services.services.insert(binding.ty, entry);
         }
 
         Ok(services)
@@ -61,10 +61,10 @@ impl Services {
 
 impl Services {
     pub fn resolve<T: Any>(&self) -> Option<Service<T>> {
-        let type_id = TypeId::of::<T>();
+        let type_meta = TypeMeta::of::<T>();
 
         self.services
-            .get(&type_id)
+            .get(&type_meta)
             .map(|x| {
                 match x {
                     ServiceEntry::Singleton(x) => x.clone(),

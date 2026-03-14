@@ -1,8 +1,8 @@
-use proc_macro2::{Ident, TokenStream};
-use quote::{ToTokens, quote};
-use syn::{
-    Attribute, DeriveInput, Error, Field, Fields, FieldsNamed, Result, Type, spanned::Spanned,
-};
+use proc_macro2::TokenStream;
+use quote::{quote, ToTokens};
+use std::ops::Deref;
+use syn::{spanned::Spanned, Attribute, DeriveInput, Error, Field, Fields, Result, Type};
+use crate::utils::resolve_crate;
 
 #[derive(Default, Copy, Clone, Eq, PartialEq)]
 enum FieldBindingKind {
@@ -18,15 +18,16 @@ struct FieldBinding<'a> {
 }
 
 pub fn expand_from_di(derive: DeriveInput) -> Result<TokenStream> {
+    let crate_name = resolve_crate();
     let fields = extract_fields(&derive)?;
 
     let initializer = expand_initializer(&fields)?;
-    let deps = expand_dependencies(&fields)?;
+    let deps = expand_dependencies(&crate_name, &fields)?;
     let ident = &derive.ident;
 
     let ts = quote! {
         impl FromDi for #ident {
-            fn depends_on() -> &'static [std::any::TypeId] {
+            fn depends_on() -> &'static [#crate_name::TypeMeta] {
                #deps
             }
 
@@ -40,17 +41,17 @@ pub fn expand_from_di(derive: DeriveInput) -> Result<TokenStream> {
     Ok(ts)
 }
 
-fn expand_dependencies(fields: &Vec<FieldBinding>) -> Result<TokenStream> {
+fn expand_dependencies(crate_name: &TokenStream, fields: &Vec<FieldBinding>) -> Result<TokenStream> {
     let deps = fields
         .iter()
         .filter(|x| x.kind == FieldBindingKind::Resolved)
         .map(|x| {
             let ty = &x.actual_type;
-            quote! { std::any::TypeId::of::<#ty>() }
+            quote! { #crate_name::TypeMeta::of::<#ty>() }
         });
 
     let ts = quote! {
-        const DEPS: &'static [std::any::TypeId] = &[
+        const DEPS: &'static [#crate_name::TypeMeta] = &[
             #(#deps),*
         ];
 

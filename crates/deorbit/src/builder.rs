@@ -2,23 +2,23 @@ use crate::binding::{Binding, ServiceLifetime, TypeMeta};
 use crate::error::Error;
 use crate::factory::{ManagedService, ServiceFactory};
 use crate::services::Services;
-use std::any::{Any, TypeId};
+use std::any::Any;
 
 /// Represents an object that's capable of building T from a DI instance.
 pub trait FromDi: Sized {
-    fn depends_on() -> &'static [TypeId];
+    fn depends_on() -> &'static [TypeMeta];
     fn produce(services: &Services) -> Self;
 }
 
 /// Represents an object that's capable of building itself from a DI instance.
 pub trait FromDiFactory<T>: 'static {
-    fn depends_on() -> &'static [TypeId];
+    fn depends_on() -> &'static [TypeMeta];
     fn produce(&self, services: &Services) -> T;
 }
 
 /// Represents an object that's capable of building itself from a DI instance.
 pub trait FromDiFactoryOnce<T, D>: 'static {
-    fn depends_on() -> &'static [TypeId];
+    fn depends_on() -> &'static [TypeMeta];
     fn produce(self, services: &Services) -> T;
 }
 
@@ -83,11 +83,11 @@ impl ServicesBuilder {
         self.bindings.push(binding)
     }
 
-    fn make_binding<T: Any>(lifetime: ServiceLifetime, dependencies: &'static [TypeId]) -> Binding {
+    fn make_binding<T: Any>(lifetime: ServiceLifetime, deps: &'static [TypeMeta]) -> Binding {
         Binding {
             ty: TypeMeta::of::<T>(),
             lifetime,
-            deps: dependencies,
+            deps,
         }
     }
 }

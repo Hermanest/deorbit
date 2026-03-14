@@ -1,10 +1,10 @@
+use crate::binding::TypeMeta;
 use crate::builder::FromDiFactoryOnce;
 use crate::{Service, Services};
-use std::any::{Any, TypeId};
 use std::sync::OnceLock;
 
 impl<T: 'static> FromDiFactoryOnce<T, ()> for T {
-    fn depends_on() -> &'static [TypeId] {
+    fn depends_on() -> &'static [TypeMeta] {
         &[]
     }
 
@@ -19,10 +19,10 @@ where
     O: 'static,
     T1: 'static,
 {
-    fn depends_on() -> &'static [TypeId] {
-        static DEPS: OnceLock<[TypeId; 1]> = OnceLock::new();
+    fn depends_on() -> &'static [TypeMeta] {
+        static DEPS: OnceLock<[TypeMeta; 1]> = OnceLock::new();
 
-        DEPS.get_or_init(|| [TypeId::of::<T1>()])
+        DEPS.get_or_init(|| [TypeMeta::of::<T1>()])
     }
 
     fn produce(self, services: &Services) -> O {
@@ -37,10 +37,10 @@ where
     T1: 'static,
     T2: 'static,
 {
-    fn depends_on() -> &'static [TypeId] {
-        static DEPS: OnceLock<[TypeId; 2]> = OnceLock::new();
+    fn depends_on() -> &'static [TypeMeta] {
+        static DEPS: OnceLock<[TypeMeta; 2]> = OnceLock::new();
 
-        DEPS.get_or_init(|| [TypeId::of::<T1>(), TypeId::of::<T2>()])
+        DEPS.get_or_init(|| [TypeMeta::of::<T1>(), TypeMeta::of::<T2>()])
     }
 
     fn produce(self, services: &Services) -> O {

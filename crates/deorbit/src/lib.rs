@@ -10,3 +10,5 @@ mod error;
 
 pub use builder::{ServicesBuilder, FromDi};
 pub use services::{Service, Services};
+pub use binding::TypeMeta;
+pub use deorbit_macro::FromDi;
