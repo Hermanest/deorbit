@@ -1,7 +1,6 @@
 use crate::builder::{FromDi, ServicesBuilder};
 use crate::services::{Service, Services};
 use std::any::TypeId;
-use crate::graph::ServiceGraph;
 
 struct Foo {
     a: Service<i32>,
@@ -34,9 +33,9 @@ fn binds_concrete() -> Result<(), String> {
     builder.bind_singleton::<Bar>();
     builder.bind_singleton_from::<Foo, _, _>(|x: Service<i32>, y: Service<Bar>| Foo { a: x, b: y });
     
-    let sorted = ServiceGraph::build(builder.bindings);
+    let built = builder.build();
 
-    println!("{:?}", sorted);
+    println!("{:?}", built);
 
     Ok(())
 }

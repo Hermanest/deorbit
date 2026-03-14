@@ -3,6 +3,7 @@ use crate::arc::TypedArc;
 use crate::builder::{FromDi, FromDiFactory};
 use std::any::Any;
 use std::fmt::{Debug, Formatter};
+use crate::error::Error;
 
 pub type ManagedService = TypedArc;
 
@@ -12,10 +13,10 @@ pub struct ServiceFactory {
 
 enum ServiceAllocator {
     Container {
-        fun: fn(&Services) -> Result<ManagedService, String>,
+        fun: fn(&Services) -> Result<ManagedService, Error>,
     },
     Function {
-        fun: Box<dyn Fn(&Services) -> Result<ManagedService, String>>,
+        fun: Box<dyn Fn(&Services) -> Result<ManagedService, Error>>,
     },
     Default {
         fun: fn() -> ManagedService,
@@ -61,7 +62,7 @@ impl ServiceFactory {
         }
     }
 
-    pub fn produce(&self, services: &Services) -> Result<ManagedService, String> {
+    pub fn produce(&self, services: &Services) -> Result<ManagedService, Error> {
         match &self.alloc {
             ServiceAllocator::Container { fun } => fun(services),
             ServiceAllocator::Function { fun } => fun(services),

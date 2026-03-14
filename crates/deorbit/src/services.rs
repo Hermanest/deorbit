@@ -1,8 +1,8 @@
 use crate::binding::{ServiceLifetime, SingletonProvider};
 use crate::builder::ServicesBuilder;
+use crate::error::Error;
 use crate::factory::{ManagedService, ServiceFactory};
 use crate::graph;
-use crate::graph::ServiceGraph;
 use std::any::{Any, TypeId};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -10,43 +10,47 @@ use std::sync::Arc;
 pub type Service<T> = Arc<T>;
 
 /// A collection of services.
+#[derive(Debug)]
 pub struct Services {
     services: HashMap<TypeId, ServiceEntry>,
 }
 
 /// A bound service.
+#[derive(Debug)]
 enum ServiceEntry {
     Singleton(ManagedService),
     Transient(ServiceFactory),
 }
 
+impl ServiceEntry {
+    fn from(value: ServiceLifetime, services: &Services) -> Result<Self, Error> {
+        let entry = match value {
+            ServiceLifetime::Singleton(x) => {
+                let instance = match x {
+                    SingletonProvider::Instance(x) => x,
+                    SingletonProvider::Factory(x) => x.produce(services)?,
+                };
+
+                Self::Singleton(instance)
+            }
+            ServiceLifetime::Transient(x) => Self::Transient(x),
+        };
+
+        Ok(entry)
+    }
+}
+
 impl Services {
-    pub fn from_builder(builder: ServicesBuilder) -> Result<Self, graph::Error> {
-        let sorted_bindings = ServiceGraph::build(builder.bindings)?;
+    /// Attempts to make an instance of Services from a ServiceBuilder instance.
+    pub fn from_builder(builder: ServicesBuilder) -> Result<Self, Error> {
+        let sorted_bindings = graph::resolve_order(builder.bindings)?;
 
         let mut services = Self {
             services: HashMap::new(),
         };
 
         for binding in sorted_bindings {
-            let entry = match binding.lifetime {
-                ServiceLifetime::Singleton(provider) => match provider {
-                    SingletonProvider::Instance(instance) => ServiceEntry::Singleton(instance),
-
-                    SingletonProvider::Factory(factory) => {
-                        let instance =
-                            factory
-                                .produce(&services)
-                                .map_err(|_| graph::Error::Missing {
-                                    type_meta: binding.ty.clone(),
-                                })?;
-
-                        ServiceEntry::Singleton(instance)
-                    }
-                },
-
-                ServiceLifetime::Transient(factory) => ServiceEntry::Transient(factory),
-            };
+            let entry = ServiceEntry::from(binding.lifetime, &services)?;
 
             services.services.insert(binding.ty.type_id, entry);
         }

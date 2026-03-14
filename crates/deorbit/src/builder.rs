@@ -1,6 +1,6 @@
 use crate::binding::{Binding, ServiceLifetime, TypeMeta};
+use crate::error::Error;
 use crate::factory::{ManagedService, ServiceFactory};
-use crate::graph;
 use crate::services::Services;
 use std::any::{Any, TypeId};
 
@@ -33,7 +33,7 @@ impl ServicesBuilder {
         Self { bindings: vec![] }
     }
 
-    pub fn build(self) -> Result<Services, graph::Error> {
+    pub fn build(self) -> Result<Services, Error> {
         Services::from_builder(self)
     }
 
