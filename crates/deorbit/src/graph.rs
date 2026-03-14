@@ -4,7 +4,6 @@ use crate::graph::NodeState::{Visited, Visiting};
 use std::any::TypeId;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
-use std::fmt::{Debug, Display};
 
 #[derive(Eq, PartialEq, Copy, Clone)]
 enum NodeState {
@@ -38,6 +37,7 @@ fn resolve_recursive(
     keyed: &HashMap<TypeId, (RefCell<Option<Binding>>, Cell<NodeState>)>,
     ordered: &mut Vec<Binding>,
 ) -> Result<(), Error> {
+    // TODO: add missing service handling
     let (binding, state) = keyed.get(ty).unwrap();
 
     // This node was already handled, ignoring
