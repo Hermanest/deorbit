@@ -3,24 +3,7 @@ use crate::error::Error;
 use crate::factory::{ManagedService, ServiceFactory};
 use crate::services::Services;
 use std::any::Any;
-
-/// Represents an object that's capable of building T from a DI instance.
-pub trait FromDi: Sized {
-    fn depends_on() -> &'static [TypeMeta];
-    fn produce(services: &Services) -> Self;
-}
-
-/// Represents an object that's capable of building itself from a DI instance.
-pub trait FromDiFactory<T>: 'static {
-    fn depends_on() -> &'static [TypeMeta];
-    fn produce(&self, services: &Services) -> T;
-}
-
-/// Represents an object that's capable of building itself from a DI instance.
-pub trait FromDiFactoryOnce<T, D>: 'static {
-    fn depends_on() -> &'static [TypeMeta];
-    fn produce(self, services: &Services) -> T;
-}
+use crate::from_di::{DiFactory, DiFactoryOnce, FromDi};
 
 /// A builder for Services.
 #[derive(Default)]
@@ -47,7 +30,7 @@ impl ServicesBuilder {
         self.bindings.push(binding)
     }
 
-    pub fn bind_singleton_from<T: Any, F: FromDiFactoryOnce<T, D>, D>(&mut self, instance: F) {
+    pub fn bind_singleton_from<T: Any, F: DiFactoryOnce<T, Args>, Args>(&mut self, instance: F) {
         let instance = ManagedService::from(instance);
         let lifetime = ServiceLifetime::singleton_from(instance);
 
@@ -65,11 +48,11 @@ impl ServicesBuilder {
         self.bindings.push(binding)
     }
 
-    pub fn bind_transient_from_fn<T: Any, K: FromDiFactory<T>>(&mut self, factory: K) {
+    pub fn bind_transient_from<T: Any, F: DiFactory<T, Args>, Args>(&mut self, factory: F) {
         let factory = ServiceFactory::from_fn(factory);
         let lifetime = ServiceLifetime::Transient(factory);
 
-        let binding = Self::make_binding::<T>(lifetime, K::depends_on());
+        let binding = Self::make_binding::<T>(lifetime, F::depends_on());
 
         self.bindings.push(binding)
     }

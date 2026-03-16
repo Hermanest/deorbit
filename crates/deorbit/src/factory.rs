@@ -1,9 +1,9 @@
 use crate::Services;
 use crate::arc::TypedArc;
-use crate::builder::{FromDi, FromDiFactory};
 use std::any::Any;
 use std::fmt::{Debug, Formatter};
 use crate::error::Error;
+use crate::from_di::{DiFactory, FromDi};
 
 pub type ManagedService = TypedArc;
 
@@ -44,7 +44,7 @@ impl ServiceFactory {
         }
     }
 
-    pub fn from_fn<T: Any>(allocator: impl FromDiFactory<T>) -> Self {
+    pub fn from_fn<T: Any, Args>(allocator: impl DiFactory<T, Args>) -> Self {
         let wrapper = move |x: &_| Ok(ManagedService::from(allocator.produce(x)));
 
         Self {
