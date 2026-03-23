@@ -1,11 +1,11 @@
 use crate::Services;
-use crate::arc::TypedArc;
-use std::any::Any;
-use std::fmt::{Debug, Formatter};
+use crate::arc::ErasedArc;
 use crate::error::Error;
 use crate::from_di::{DiFactory, FromDi};
+use std::any::Any;
+use std::fmt::{Debug, Formatter};
 
-pub type ManagedService = TypedArc;
+pub type ManagedService = ErasedArc;
 
 pub struct ServiceFactory {
     alloc: ServiceAllocator,
@@ -28,16 +28,16 @@ impl Debug for ServiceFactory {
         let stringified = match self.alloc {
             ServiceAllocator::Container { .. } => "Container",
             ServiceAllocator::Function { .. } => "Function",
-            ServiceAllocator::Default { .. } => "Default"
+            ServiceAllocator::Default { .. } => "Default",
         };
-        
+
         write!(f, "{}", stringified)
     }
 }
 
 impl ServiceFactory {
     pub fn from_container<T: Any + FromDi>() -> Self {
-        let wrapper = |x: &_| Ok(ManagedService::from(T::produce(x)));
+        let wrapper = |x: &_| Ok(ManagedService::from_instance(T::produce(x)));
 
         Self {
             alloc: ServiceAllocator::Container { fun: wrapper },
@@ -45,7 +45,7 @@ impl ServiceFactory {
     }
 
     pub fn from_fn<T: Any, Args>(allocator: impl DiFactory<T, Args>) -> Self {
-        let wrapper = move |x: &_| Ok(ManagedService::from(allocator.produce(x)));
+        let wrapper = move |x: &_| Ok(ManagedService::from_instance(allocator.produce(x)));
 
         Self {
             alloc: ServiceAllocator::Function {
@@ -57,7 +57,7 @@ impl ServiceFactory {
     pub fn from_default<T: Any + Default>() -> Self {
         Self {
             alloc: ServiceAllocator::Default {
-                fun: || ManagedService::from(T::default()),
+                fun: || ManagedService::from_instance(T::default()),
             },
         }
     }

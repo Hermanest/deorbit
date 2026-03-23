@@ -1,45 +1,54 @@
-use std::any::{Any, TypeId};
+use std::any::TypeId;
+use std::mem;
 use std::sync::Arc;
 
 /// Allows storing heterogeneous data in the same collection.
-#[derive(Clone, Debug)]
-pub(crate) struct TypedArc {
+#[derive(Debug)]
+pub(crate) struct ErasedArc {
     type_id: TypeId,
-    data: Arc<()>,
+    // Here Arc might have a size of 16 bytes hence not safe to be stored
+    // as a plain Arc because fat pointers don't have a guaranteed layout
+    data: [usize; 2],
+    // Arc is completely erased so we have to drop it manually
+    drop_fn: unsafe fn([usize; 2]),
+    // Same as for drop
+    inc_fn: unsafe fn([usize; 2]),
 }
 
-impl TypedArc {
-    pub fn from<T: Any>(instance: T) -> Self {
-        let arc = Arc::new(instance);
+impl ErasedArc {
+    pub fn from_instance<T: 'static>(instance: T) -> Self {
+        Self::from(Arc::new(instance))
+    }
 
+    pub fn from<T: ?Sized + 'static>(instance: Arc<T>) -> Self {
         Self {
             type_id: TypeId::of::<T>(),
-            data: unsafe { Self::cast_arc(arc) },
+            data: unsafe {
+                let raw = Arc::into_raw(instance);
+
+                mem::transmute_copy(&raw)
+            },
+            drop_fn: |x| unsafe {
+                let ptr = Self::cast_ptr::<T>(&x);
+
+                Arc::decrement_strong_count(ptr);
+            },
+            inc_fn: |x| unsafe {
+                let ptr = Self::cast_ptr::<T>(&x);
+
+                Arc::increment_strong_count(ptr);
+            },
         }
     }
 
-    pub fn from_generic<T: Any>() -> Self {
-        let arc = Arc::<T>::new_uninit();
-
-        Self {
-            type_id: TypeId::of::<T>(),
-            data: unsafe { Self::cast_arc(arc) },
-        }
-    }
-
-    pub fn from_size(type_id: TypeId, size: usize) -> Self {
-        let arc = Arc::<[u8]>::new_uninit_slice(size);
-
-        Self {
-            type_id,
-            data: unsafe { Self::cast_arc(arc) },
-        }
-    }
-
-    pub fn downcast<T: Any>(&self) -> Option<Arc<T>> {
+    pub fn coerce<T: ?Sized + 'static>(&self) -> Option<Arc<T>> {
         if self.type_id == TypeId::of::<T>() {
-            let data = self.data.clone();
-            let coerced = unsafe { Self::cast_arc(data) };
+            let coerced = unsafe {
+                let ptr = Self::cast_ptr::<T>(&self.data);
+
+                Arc::increment_strong_count(ptr);
+                Arc::from_raw(ptr)
+            };
 
             Some(coerced)
         } else {
@@ -47,7 +56,32 @@ impl TypedArc {
         }
     }
 
-    unsafe fn cast_arc<T: ?Sized, K>(from: Arc<T>) -> Arc<K> {
-        unsafe { Arc::from_raw(Arc::into_raw(from).cast()) }
+    unsafe fn cast_ptr<T: ?Sized>(from: &[usize; 2]) -> *const T {
+        // Note that from is the initial arc pointer, so we wrap it into
+        // ManuallyDrop to prevent it from being dropped
+        unsafe { mem::transmute_copy(&from) }
+    }
+}
+
+impl Clone for ErasedArc {
+    fn clone(&self) -> Self {
+        unsafe {
+            (self.inc_fn)(self.data);
+        }
+
+        Self {
+            type_id: self.type_id,
+            data: self.data,
+            drop_fn: self.drop_fn,
+            inc_fn: self.inc_fn,
+        }
+    }
+}
+
+impl Drop for ErasedArc {
+    fn drop(&mut self) {
+        unsafe {
+            (self.drop_fn)(self.data);
+        }
     }
 }

@@ -76,6 +76,6 @@ impl Services {
                         .expect("The binding has failed while trying to instantiate Transient"),
                 }
             })
-            .map(|x| x.downcast::<T>().unwrap())
+            .map(|x| x.coerce::<T>().unwrap())
     }
 }
