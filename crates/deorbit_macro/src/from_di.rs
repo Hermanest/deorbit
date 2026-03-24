@@ -31,7 +31,7 @@ pub fn expand_from_di(derive: DeriveInput) -> Result<TokenStream> {
                #deps
             }
 
-            fn produce(services: &Services) -> Self {
+            fn produce(services: &#crate_name::Services) -> Self {
                 #initializer
             }
         }

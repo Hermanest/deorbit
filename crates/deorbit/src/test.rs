@@ -1,7 +1,7 @@
 use crate::builder::ServicesBuilder;
 use crate::error::Error;
 use crate::from_di::FromDi;
-use crate::services::{Service, Services};
+use crate::Service;
 use deorbit_macro::FromDi;
 
 #[cfg(test)]
