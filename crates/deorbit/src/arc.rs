@@ -91,3 +91,45 @@ impl Drop for ErasedArc {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use std::sync::Arc;
+
+    #[test]
+    fn test_coercion() {
+        let erased = ErasedArc::from_instance(42);
+        let coerced = erased.coerce::<i32>().unwrap();
+
+        assert_eq!(*coerced, 42);
+    }
+
+    #[test]
+    fn test_unsized() {
+        trait MyTrait { fn get(&self) -> i32; }
+        impl MyTrait for i32 { fn get(&self) -> i32 { *self } }
+
+        let arc: Arc<dyn MyTrait> = Arc::new(100);
+
+        let erased = ErasedArc::from(arc);
+        let coerced = erased.coerce::<dyn MyTrait>().unwrap();
+
+        assert_eq!(coerced.get(), 100);
+    }
+
+    #[test]
+    fn test_clone() {
+        let arc = Arc::new(10);
+        let erased = ErasedArc::from(arc.clone());
+
+        assert_eq!(Arc::strong_count(&arc), 2);
+
+        {
+            let _cloned = erased.clone();
+            assert_eq!(Arc::strong_count(&arc), 3);
+        } // _cloned drops here
+
+        assert_eq!(Arc::strong_count(&arc), 2);
+    }
+}
