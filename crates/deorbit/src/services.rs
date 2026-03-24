@@ -1,7 +1,8 @@
+use crate::arc::ErasedArc;
 use crate::binding::{ServiceLifetime, SingletonProvider};
 use crate::builder::ServicesBuilder;
 use crate::error::Error;
-use crate::factory::{ManagedService, ServiceFactory};
+use crate::factory::ServiceFactory;
 use crate::{TypeMeta, graph};
 use std::any::Any;
 use std::collections::HashMap;
@@ -18,7 +19,7 @@ pub struct Services {
 /// A bound service.
 #[derive(Debug)]
 enum ServiceEntry {
-    Singleton(ManagedService),
+    Singleton(ErasedArc),
     Transient(ServiceFactory),
 }
 

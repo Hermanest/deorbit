@@ -1,8 +1,9 @@
-use crate::factory::{ManagedService, ServiceFactory};
+use crate::factory::ServiceFactory;
 use std::any::{TypeId, type_name};
 use std::cmp::Ordering;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
+use crate::arc::ErasedArc;
 
 #[derive(Debug)]
 pub struct Binding {
@@ -81,7 +82,7 @@ impl Hash for TypeMeta {
 
 #[derive(Debug)]
 pub enum SingletonProvider {
-    Instance(ManagedService),
+    Instance(ErasedArc),
     Factory(ServiceFactory),
 }
 
@@ -92,7 +93,7 @@ pub enum ServiceLifetime {
 }
 
 impl ServiceLifetime {
-    pub fn singleton_from(service: ManagedService) -> Self {
+    pub fn singleton_from(service: ErasedArc) -> Self {
         Self::Singleton(SingletonProvider::Instance(service))
     }
 

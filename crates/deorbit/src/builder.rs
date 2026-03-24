@@ -1,9 +1,10 @@
+use crate::arc::ErasedArc;
 use crate::binding::{Binding, ServiceLifetime, TypeMeta};
 use crate::error::Error;
-use crate::factory::{ManagedService, ServiceFactory};
+use crate::factory::ServiceFactory;
+use crate::from_di::{DiFactory, DiFactoryOnce, FromDi};
 use crate::services::Services;
 use std::any::Any;
-use crate::from_di::{DiFactory, DiFactoryOnce, FromDi};
 
 /// A builder for Services.
 #[derive(Default)]
@@ -31,7 +32,7 @@ impl ServicesBuilder {
     }
 
     pub fn bind_singleton_from<T: Any, F: DiFactoryOnce<T, Args>, Args>(&mut self, instance: F) {
-        let instance = ManagedService::from_instance(instance);
+        let instance = ErasedArc::from_instance(instance);
         let lifetime = ServiceLifetime::singleton_from(instance);
 
         let binding = Self::make_binding::<T>(lifetime, F::depends_on());

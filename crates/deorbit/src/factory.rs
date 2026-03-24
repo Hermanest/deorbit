@@ -5,21 +5,19 @@ use crate::from_di::{DiFactory, FromDi};
 use std::any::Any;
 use std::fmt::{Debug, Formatter};
 
-pub type ManagedService = ErasedArc;
-
 pub struct ServiceFactory {
     alloc: ServiceAllocator,
 }
 
 enum ServiceAllocator {
     Container {
-        fun: fn(&Services) -> Result<ManagedService, Error>,
+        fun: fn(&Services) -> Result<ErasedArc, Error>,
     },
     Function {
-        fun: Box<dyn Fn(&Services) -> Result<ManagedService, Error>>,
+        fun: Box<dyn Fn(&Services) -> Result<ErasedArc, Error>>,
     },
     Default {
-        fun: fn() -> ManagedService,
+        fun: fn() -> ErasedArc,
     },
 }
 
@@ -37,7 +35,7 @@ impl Debug for ServiceFactory {
 
 impl ServiceFactory {
     pub fn from_container<T: Any + FromDi>() -> Self {
-        let wrapper = |x: &_| Ok(ManagedService::from_instance(T::produce(x)));
+        let wrapper = |x: &_| Ok(ErasedArc::from_instance(T::produce(x)));
 
         Self {
             alloc: ServiceAllocator::Container { fun: wrapper },
@@ -45,7 +43,7 @@ impl ServiceFactory {
     }
 
     pub fn from_fn<T: Any, Args>(allocator: impl DiFactory<T, Args>) -> Self {
-        let wrapper = move |x: &_| Ok(ManagedService::from_instance(allocator.produce(x)));
+        let wrapper = move |x: &_| Ok(ErasedArc::from_instance(allocator.produce(x)));
 
         Self {
             alloc: ServiceAllocator::Function {
@@ -57,12 +55,12 @@ impl ServiceFactory {
     pub fn from_default<T: Any + Default>() -> Self {
         Self {
             alloc: ServiceAllocator::Default {
-                fun: || ManagedService::from_instance(T::default()),
+                fun: || ErasedArc::from_instance(T::default()),
             },
         }
     }
 
-    pub fn produce(&self, services: &Services) -> Result<ManagedService, Error> {
+    pub fn produce(&self, services: &Services) -> Result<ErasedArc, Error> {
         match &self.alloc {
             ServiceAllocator::Container { fun } => fun(services),
             ServiceAllocator::Function { fun } => fun(services),
