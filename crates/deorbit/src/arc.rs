@@ -11,7 +11,7 @@ pub(crate) struct ErasedArc {
     data: [usize; 2],
     // Arc is completely erased so we have to drop it manually
     drop_fn: unsafe fn([usize; 2]),
-    // Same as for drop
+    // Used to increment reference count for an arc
     inc_fn: unsafe fn([usize; 2]),
 }
 
@@ -57,8 +57,6 @@ impl ErasedArc {
     }
 
     unsafe fn cast_ptr<T: ?Sized>(from: &[usize; 2]) -> *const T {
-        // Note that from is the initial arc pointer, so we wrap it into
-        // ManuallyDrop to prevent it from being dropped
         unsafe { mem::transmute_copy(&from) }
     }
 }
