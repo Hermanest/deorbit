@@ -8,7 +8,7 @@ mod graph;
 mod error;
 
 #[cfg(test)]
-mod test;
+mod tests;
 
 pub use builder::{ServicesBuilder};
 pub use services::{Service, Services};

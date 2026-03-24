@@ -93,7 +93,7 @@ impl Drop for ErasedArc {
 }
 
 #[cfg(test)]
-mod test {
+mod tests {
     use super::*;
     use std::sync::Arc;
 
