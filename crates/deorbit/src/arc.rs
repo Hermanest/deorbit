@@ -1,5 +1,6 @@
 use std::any::TypeId;
 use std::mem;
+use std::ptr;
 use std::sync::Arc;
 
 /// Allows storing heterogeneous data in the same collection.
@@ -9,8 +10,8 @@ pub(crate) struct ErasedArc {
     // Here Arc might have a size of 16 bytes hence not safe to be stored
     // as a plain Arc because fat pointers don't have a guaranteed layout
     data: [usize; 2],
-    // Arc is completely erased so we have to drop it manually
-    drop_fn: unsafe fn([usize; 2]),
+    // Used to decrement reference count for an arc
+    dec_fn: unsafe fn([usize; 2]),
     // Used to increment reference count for an arc
     inc_fn: unsafe fn([usize; 2]),
 }
@@ -25,10 +26,17 @@ impl ErasedArc {
             type_id: TypeId::of::<T>(),
             data: unsafe {
                 let raw = Arc::into_raw(instance);
+                let mut data = [0usize; 2];
 
-                mem::transmute_copy(&raw)
+                ptr::copy_nonoverlapping(
+                    &raw as *const _ as *const u8, // Important to take a reference to the pointer itself
+                    data.as_mut_ptr() as *mut u8,
+                    size_of_val(&raw),
+                );
+
+                data
             },
-            drop_fn: |x| unsafe {
+            dec_fn: |x| unsafe {
                 let ptr = Self::cast_ptr::<T>(&x);
 
                 Arc::decrement_strong_count(ptr);
@@ -57,7 +65,7 @@ impl ErasedArc {
     }
 
     unsafe fn cast_ptr<T: ?Sized>(from: &[usize; 2]) -> *const T {
-        unsafe { mem::transmute_copy(&from) }
+        unsafe { mem::transmute_copy(from) }
     }
 }
 
@@ -70,7 +78,7 @@ impl Clone for ErasedArc {
         Self {
             type_id: self.type_id,
             data: self.data,
-            drop_fn: self.drop_fn,
+            dec_fn: self.dec_fn,
             inc_fn: self.inc_fn,
         }
     }
@@ -79,7 +87,7 @@ impl Clone for ErasedArc {
 impl Drop for ErasedArc {
     fn drop(&mut self) {
         unsafe {
-            (self.drop_fn)(self.data);
+            (self.dec_fn)(self.data);
         }
     }
 }
