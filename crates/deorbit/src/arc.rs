@@ -2,11 +2,12 @@ use std::any::TypeId;
 use std::mem;
 use std::ptr;
 use std::sync::Arc;
+use crate::TypeMeta;
 
 /// Allows storing heterogeneous data in the same collection.
 #[derive(Debug)]
 pub(crate) struct ErasedArc {
-    type_id: TypeId,
+    type_id: TypeMeta,
     // Here Arc might have a size of 16 bytes hence not safe to be stored
     // as a plain Arc because fat pointers don't have a guaranteed layout
     data: [usize; 2],
@@ -23,7 +24,7 @@ impl ErasedArc {
 
     pub fn from<T: ?Sized + 'static>(instance: Arc<T>) -> Self {
         Self {
-            type_id: TypeId::of::<T>(),
+            type_id: TypeMeta::of::<T>(),
             data: unsafe {
                 let raw = Arc::into_raw(instance);
                 let mut data = [0usize; 2];
@@ -50,7 +51,7 @@ impl ErasedArc {
     }
 
     pub fn coerce<T: ?Sized + 'static>(&self) -> Option<Arc<T>> {
-        if self.type_id == TypeId::of::<T>() {
+        if self.type_id == TypeMeta::of::<T>() {
             let coerced = unsafe {
                 let ptr = Self::cast_ptr::<T>(&self.data);
 

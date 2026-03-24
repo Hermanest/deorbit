@@ -24,7 +24,7 @@ enum MetaName {
 }
 
 impl TypeMeta {
-    pub const fn of<T: 'static>() -> Self {
+    pub const fn of<T: ?Sized + 'static>() -> Self {
         Self {
             type_id: TypeId::of::<T>(),
             // Const type_name is unstable so using this workaround
@@ -32,7 +32,7 @@ impl TypeMeta {
         }
     }
 
-    pub const fn of_name<T: 'static>(name: &'static str) -> Self {
+    pub const fn of_name<T: ?Sized + 'static>(name: &'static str) -> Self {
         Self {
             type_id: TypeId::of::<T>(),
             type_name: MetaName::Hardcoded(name),
