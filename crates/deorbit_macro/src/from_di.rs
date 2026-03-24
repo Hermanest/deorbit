@@ -1,8 +1,7 @@
+use crate::utils::resolve_crate;
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
-use std::ops::Deref;
 use syn::{spanned::Spanned, Attribute, DeriveInput, Error, Field, Fields, Result, Type};
-use crate::utils::resolve_crate;
 
 #[derive(Default, Copy, Clone, Eq, PartialEq)]
 enum FieldBindingKind {

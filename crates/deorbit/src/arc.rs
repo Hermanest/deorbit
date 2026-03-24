@@ -1,8 +1,7 @@
-use std::any::TypeId;
+use crate::TypeMeta;
 use std::mem;
 use std::ptr;
 use std::sync::Arc;
-use crate::TypeMeta;
 
 /// Allows storing heterogeneous data in the same collection.
 #[derive(Debug)]
