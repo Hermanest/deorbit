@@ -1,5 +1,5 @@
+use crate::TypeMeta;
 use std::fmt::{Display, Formatter};
-use crate::binding::TypeMeta;
 
 #[derive(Debug)]
 pub enum Error {

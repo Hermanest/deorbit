@@ -9,8 +9,9 @@ mod error;
 
 #[cfg(test)]
 mod tests;
+mod meta;
 
 pub use builder::{ServicesBuilder};
 pub use services::{Service, Services};
-pub use binding::TypeMeta;
+pub use meta::TypeMeta;
 pub use deorbit_macro::FromDi;

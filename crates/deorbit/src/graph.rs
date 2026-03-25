@@ -1,4 +1,5 @@
-use crate::binding::{Binding, TypeMeta};
+use crate::TypeMeta;
+use crate::binding::Binding;
 use crate::error::Error;
 use crate::graph::NodeState::{Unvisited, Visited, Visiting};
 use std::cell::{Cell, RefCell};
@@ -69,7 +70,7 @@ fn resolve_recursive(
         result.map_err(|x| match x {
             Error::Circular { mut path } => {
                 path.insert(0, *ty);
-                
+
                 Error::Circular { path }
             }
             x => x,

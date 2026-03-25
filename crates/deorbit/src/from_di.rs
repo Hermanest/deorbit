@@ -1,5 +1,5 @@
-use crate::binding::TypeMeta;
 use crate::Services;
+use crate::TypeMeta;
 
 /// Represents an object that's capable of building itself from a DI instance.
 pub trait FromDi: Sized {
