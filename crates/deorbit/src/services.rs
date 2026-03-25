@@ -44,7 +44,7 @@ impl ServiceEntry {
 impl Services {
     /// Attempts to make an instance of Services from a ServiceBuilder instance.
     pub fn from_builder(builder: ServicesBuilder) -> Result<Self, Error> {
-        let sorted_bindings = graph::resolve_order(builder.bindings)?;
+        let sorted_bindings = graph::resolve_order(builder.to_vec())?;
 
         let mut services = Self {
             services: HashMap::new(),

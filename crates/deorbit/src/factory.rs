@@ -1,8 +1,7 @@
-use crate::Services;
 use crate::arc::ErasedArc;
 use crate::error::Error;
 use crate::from_di::{DiFactory, FromDi};
-use std::any::Any;
+use crate::Services;
 use std::fmt::{Debug, Formatter};
 
 pub struct ServiceFactory {
@@ -34,7 +33,7 @@ impl Debug for ServiceFactory {
 }
 
 impl ServiceFactory {
-    pub fn from_container<T: Any + FromDi>() -> Self {
+    pub fn from_container<T: 'static + FromDi>() -> Self {
         let wrapper = |x: &_| Ok(ErasedArc::from_instance(T::produce(x)));
 
         Self {
@@ -42,7 +41,7 @@ impl ServiceFactory {
         }
     }
 
-    pub fn from_fn<T: Any, Args>(allocator: impl DiFactory<T, Args>) -> Self {
+    pub fn from_fn<T: 'static, Args>(allocator: impl DiFactory<T, Args>) -> Self {
         let wrapper = move |x: &_| Ok(ErasedArc::from_instance(allocator.produce(x)));
 
         Self {
@@ -52,7 +51,7 @@ impl ServiceFactory {
         }
     }
 
-    pub fn from_default<T: Any + Default>() -> Self {
+    pub fn from_default<T: 'static + Default>() -> Self {
         Self {
             alloc: ServiceAllocator::Default {
                 fun: || ErasedArc::from_instance(T::default()),

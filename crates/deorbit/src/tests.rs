@@ -18,9 +18,9 @@ fn binds_concrete() -> Result<(), Error> {
 
     let mut builder = ServicesBuilder::new();
 
-    builder.bind_singleton_from(10i32);
-    builder.bind_singleton::<Bar>();
-    builder.bind_singleton::<Foo>();
+    builder.bind::<i32>().singleton().from(10);
+    builder.bind::<Bar>().singleton().from_di();
+    builder.bind::<Foo>().singleton().from_di();
 
     let services = builder.build()?;
 
@@ -34,8 +34,8 @@ fn binds_concrete() -> Result<(), Error> {
 fn fails_duplicated() {
     let mut builder = ServicesBuilder::new();
 
-    builder.bind_singleton_from(10i32);
-    builder.bind_singleton_from(10i32);
+    builder.bind().singleton().from(10i32);
+    builder.bind().singleton().from(10i32);
 
     let res = builder.build();
 
@@ -44,10 +44,15 @@ fn fails_duplicated() {
 
 #[test]
 fn fails_missing() {
+    #[derive(FromDi)]
+    struct Foo {
+        a: Service<i64>,
+    }
+
     let mut builder = ServicesBuilder::new();
 
-    builder.bind_singleton_from(10i32);
-    builder.bind_singleton_from::<i128, _, _>(|_: Service<i64>| 0i128);
+    builder.bind().singleton().from(10i32);
+    builder.bind::<Foo>().singleton().from_di();
 
     let res = builder.build();
 
@@ -68,8 +73,8 @@ fn fails_circular() {
 
     let mut builder = ServicesBuilder::new();
 
-    builder.bind_singleton::<FooCirc>();
-    builder.bind_singleton::<BarCirc>();
+    builder.bind::<FooCirc>().singleton().from_di();
+    builder.bind::<BarCirc>().singleton().from_di();
 
     let res = builder.build();
 

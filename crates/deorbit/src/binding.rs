@@ -1,9 +1,10 @@
+use crate::arc::ErasedArc;
 use crate::factory::ServiceFactory;
+use crate::from_di::{DiFactory, FromDi};
 use std::any::{TypeId, type_name};
 use std::cmp::Ordering;
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
-use crate::arc::ErasedArc;
 
 #[derive(Debug)]
 pub struct Binding {
@@ -93,11 +94,33 @@ pub enum ServiceLifetime {
 }
 
 impl ServiceLifetime {
-    pub fn singleton_from(service: ErasedArc) -> Self {
-        Self::Singleton(SingletonProvider::Instance(service))
+    pub fn singleton_from<T: 'static>(service: T) -> Self {
+        let arc = ErasedArc::from_instance(service);
+
+        Self::Singleton(SingletonProvider::Instance(arc))
     }
 
-    pub fn singleton_resolved(factory: ServiceFactory) -> Self {
-        Self::Singleton(SingletonProvider::Factory(factory))
+    pub fn singleton_from_di<T: 'static + FromDi>() -> Self {
+        Self::Singleton(SingletonProvider::Factory(
+            ServiceFactory::from_container::<T>(),
+        ))
+    }
+
+    pub fn singleton_from_default<T: 'static + Default>() -> Self {
+        Self::Singleton(SingletonProvider::Factory(
+            ServiceFactory::from_default::<T>(),
+        ))
+    }
+
+    pub fn transient_from_di<T: 'static + FromDi>() -> Self {
+        Self::Transient(ServiceFactory::from_container::<T>())
+    }
+
+    pub fn transient_from_default<T: 'static + Default>() -> Self {
+        Self::Transient(ServiceFactory::from_default::<T>())
+    }
+
+    pub fn transient_from_fn<T: 'static, Args>(factory: impl DiFactory<T, Args>) -> Self {
+        Self::Transient(ServiceFactory::from_fn(factory))
     }
 }
