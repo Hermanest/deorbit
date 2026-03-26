@@ -1,7 +1,7 @@
-use crate::arc::ErasedArc;
-use crate::error::Error;
-use crate::from_di::{DiFactory, FromDi};
 use crate::Services;
+use crate::from_di::{DiFactory, FromDi};
+use crate::resolver::Error;
+use crate::runtime::ErasedArc;
 use std::fmt::{Debug, Formatter};
 
 pub struct ServiceFactory {

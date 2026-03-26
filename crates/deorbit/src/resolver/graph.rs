@@ -1,7 +1,6 @@
 use crate::TypeMeta;
 use crate::binding::Binding;
-use crate::error::Error;
-use crate::graph::NodeState::{Unvisited, Visited, Visiting};
+use crate::resolver::Error;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 
@@ -26,7 +25,7 @@ pub fn resolve_order(bindings: Vec<Binding>) -> Result<Vec<Binding>, Error> {
 
         let node = Node {
             binding: RefCell::new(Some(binding)),
-            state: Cell::new(Unvisited),
+            state: Cell::new(NodeState::Unvisited),
         };
 
         if mapped.insert(ty, node).is_some() {
@@ -51,18 +50,18 @@ fn resolve_recursive(
     })?;
 
     // This node was already handled, ignoring
-    if node.state.get() == Visited {
+    if node.state.get() == NodeState::Visited {
         return Ok(());
     }
 
     // Means that the node in the current stack
-    if node.state.get() == Visiting {
+    if node.state.get() == NodeState::Visiting {
         return Err(Error::Circular { path: vec![*ty] });
     }
 
     // Setting a temporary state so in case of a circular dependency
     // we'll see this node as being handled
-    node.state.set(Visiting);
+    node.state.set(NodeState::Visiting);
 
     for dep in node.binding.borrow().as_ref().unwrap().deps {
         let result = resolve_recursive(&dep, keyed, ordered);
@@ -78,7 +77,7 @@ fn resolve_recursive(
     }
 
     ordered.push(node.binding.take().unwrap());
-    node.state.set(Visited);
+    node.state.set(NodeState::Visited);
 
     Ok(())
 }

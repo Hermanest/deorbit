@@ -1,10 +1,10 @@
-use crate::TypeMeta;
-use crate::arc::ErasedArc;
 use crate::binding::{ServiceLifetime, SingletonProvider};
 use crate::builder::ServicesBuilder;
-use crate::error::Error;
-use crate::factory::ServiceFactory;
-use crate::graph;
+use crate::resolver::Error;
+use crate::resolver::graph;
+use crate::runtime::ErasedArc;
+use crate::runtime::ServiceFactory;
+use crate::runtime::TypeMeta;
 use std::any::Any;
 use std::collections::HashMap;
 use std::sync::Arc;

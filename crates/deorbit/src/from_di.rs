@@ -1,5 +1,5 @@
-use crate::Services;
-use crate::TypeMeta;
+use crate::resolver::Services;
+use crate::runtime::TypeMeta;
 
 /// Represents an object that's capable of building itself from a DI instance.
 pub trait FromDi: Sized {
@@ -27,10 +27,10 @@ macro_rules! impl_factory {
             O: 'static,
             $($args: 'static),*
         {
-            fn depends_on() -> &'static [$crate::TypeMeta] {
+            fn depends_on() -> &'static [$crate::runtime::TypeMeta] {
                 const {
                     &[
-                        $($crate::TypeMeta::of::<$args>()),*
+                        $($crate::runtime::TypeMeta::of::<$args>()),*
                     ]
                 }
             }

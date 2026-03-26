@@ -1,4 +1,4 @@
-use crate::TypeMeta;
+use crate::runtime::TypeMeta;
 use std::mem;
 use std::sync::Arc;
 
@@ -53,8 +53,8 @@ impl ErasedUnsizer {
 
 #[cfg(test)]
 mod tests {
-    use std::any::Any;
     use super::*;
+    use std::any::Any;
 
     #[test]
     fn test_unsizes() {
@@ -69,7 +69,10 @@ mod tests {
         let arc = Arc::new(10i64);
         let unsizer = ErasedUnsizer::try_from(|x: Arc<i32>| x as Arc<dyn Any>).unwrap();
 
-        assert!(matches!(unsizer.unsize::<_, dyn Any>(arc), Err(Error::MismatchedTypes)));
+        assert!(matches!(
+            unsizer.unsize::<_, dyn Any>(arc),
+            Err(Error::MismatchedTypes)
+        ));
     }
 
     #[test]
@@ -77,7 +80,10 @@ mod tests {
         let arc = Arc::new(10);
         let unsizer = ErasedUnsizer::try_from(|x: Arc<i32>| Arc::new(1) as Arc<dyn Any>).unwrap();
 
-        assert!(matches!(unsizer.unsize::<_, dyn Any>(arc), Err(Error::MismatchedData)));
+        assert!(matches!(
+            unsizer.unsize::<_, dyn Any>(arc),
+            Err(Error::MismatchedData)
+        ));
     }
 
     #[test]

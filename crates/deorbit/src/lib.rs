@@ -1,18 +1,13 @@
-mod arc;
-mod builder;
-mod factory;
-mod services;
 mod binding;
+mod builder;
 mod from_di;
-mod graph;
-mod error;
+mod resolver;
+mod runtime;
 
 #[cfg(test)]
 mod tests;
-mod meta;
-mod unsize;
 
-pub use builder::{ServicesBuilder};
-pub use services::{Service, Services};
-pub use meta::TypeMeta;
+pub use builder::ServicesBuilder;
 pub use deorbit_macro::FromDi;
+pub use resolver::{Service, Services};
+pub use runtime::TypeMeta;

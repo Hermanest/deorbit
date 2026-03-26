@@ -1,7 +1,8 @@
+use crate::Services;
 use crate::binding::{Binding, ServiceLifetime};
 use crate::builder::bind::BindingBuilder;
-use crate::error::Error;
-use crate::{Services, TypeMeta};
+use crate::resolver::Error;
+use crate::runtime::TypeMeta;
 
 /// A builder for Services.
 #[derive(Default, Debug)]

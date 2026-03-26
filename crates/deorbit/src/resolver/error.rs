@@ -1,4 +1,4 @@
-use crate::TypeMeta;
+use crate::runtime::TypeMeta;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]

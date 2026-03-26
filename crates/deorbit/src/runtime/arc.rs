@@ -1,11 +1,11 @@
-use crate::TypeMeta;
+use crate::runtime::meta::TypeMeta;
 use std::mem;
 use std::ptr;
 use std::sync::Arc;
 
 /// Allows storing heterogeneous data in the same collection.
 #[derive(Debug)]
-pub(crate) struct ErasedArc {
+pub struct ErasedArc {
     type_id: TypeMeta,
     // Here Arc might have a size of 16 bytes hence not safe to be stored
     // as a plain Arc because fat pointers don't have a guaranteed layout
@@ -107,8 +107,14 @@ mod tests {
 
     #[test]
     fn test_unsized() {
-        trait MyTrait { fn get(&self) -> i32; }
-        impl MyTrait for i32 { fn get(&self) -> i32 { *self } }
+        trait MyTrait {
+            fn get(&self) -> i32;
+        }
+        impl MyTrait for i32 {
+            fn get(&self) -> i32 {
+                *self
+            }
+        }
 
         let arc: Arc<dyn MyTrait> = Arc::new(100);
 
