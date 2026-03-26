@@ -10,6 +10,7 @@ mod error;
 #[cfg(test)]
 mod tests;
 mod meta;
+mod unsize;
 
 pub use builder::{ServicesBuilder};
 pub use services::{Service, Services};

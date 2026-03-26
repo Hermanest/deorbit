@@ -1,6 +1,9 @@
 use crate::binding::ServiceLifetime;
 use crate::builder::services::ServicesBuilder;
 use crate::from_di::{DiFactory, FromDi};
+use crate::unsize::ErasedUnsizer;
+use crate::TypeMeta;
+use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
@@ -9,6 +12,7 @@ use std::sync::Arc;
 pub struct BindingBuilder<'a, T: 'static> {
     builder: &'a mut ServicesBuilder,
     bind_self: bool,
+    traits: HashMap<TypeMeta, Option<ErasedUnsizer>>,
     ph: PhantomData<T>,
 }
 
@@ -17,6 +21,7 @@ impl<'a, T: 'static> BindingBuilder<'a, T> {
         Self {
             builder,
             bind_self: false,
+            traits: HashMap::new(),
             ph: PhantomData,
         }
     }
@@ -30,6 +35,10 @@ impl<'a, T: 'static> BindingBuilder<'a, T> {
 
     /// Maps this type to the specified trait.
     pub fn to<Trait: ?Sized + 'static>(mut self, eval: fn(Arc<T>) -> Arc<Trait>) -> Self {
+        self.traits
+            .entry(TypeMeta::of::<Trait>())
+            .or_insert_with(|| ErasedUnsizer::try_from(eval));
+
         self
     }
 
