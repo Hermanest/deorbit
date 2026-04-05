@@ -1,8 +1,9 @@
 use crate::Service;
 use crate::builder::ServicesBuilder;
-use crate::resolver::Error;
 use crate::from_di::FromDi;
+use crate::resolver::Error;
 use deorbit_macro::FromDi;
+use std::any::Any;
 
 #[test]
 fn binds_concrete() -> Result<(), Error> {
@@ -18,7 +19,9 @@ fn binds_concrete() -> Result<(), Error> {
 
     let mut builder = ServicesBuilder::new();
 
-    builder.bind::<i32>().singleton().from(10);
+    builder.bind::<i32>().not_self().singleton().from(10);
+    builder.bind_alias::<dyn Any>().to::<i32>(|x| x).done();
+
     builder.bind::<Bar>().singleton().from_di();
     builder.bind::<Foo>().singleton().from_di();
 
@@ -26,6 +29,9 @@ fn binds_concrete() -> Result<(), Error> {
 
     services.resolve::<Foo>().expect("Failed to resolve Foo");
     services.resolve::<Bar>().expect("Failed to resolve Bar");
+    services
+        .resolve::<dyn Any>()
+        .expect("Failed to resolve dyn Any");
 
     Ok(())
 }

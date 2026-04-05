@@ -49,6 +49,10 @@ impl ErasedArc {
         }
     }
 
+    pub fn ty(&self) -> TypeMeta {
+        self.type_id
+    }
+
     pub fn coerce<T: ?Sized + 'static>(&self) -> Option<Arc<T>> {
         if self.type_id == TypeMeta::of::<T>() {
             let coerced = unsafe {
@@ -62,6 +66,10 @@ impl ErasedArc {
         } else {
             None
         }
+    }
+    
+    pub fn as_ptr(arc: &Self) -> *const () {
+        unsafe { Self::cast_ptr(&arc.data) }
     }
 
     unsafe fn cast_ptr<T: ?Sized>(from: &[usize; 2]) -> *const T {

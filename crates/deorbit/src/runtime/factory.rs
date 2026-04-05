@@ -3,17 +3,20 @@ use crate::from_di::{DiFactory, FromDi};
 use crate::resolver::Error;
 use crate::runtime::ErasedArc;
 use std::fmt::{Debug, Formatter};
+use std::sync::Arc;
 
+#[derive(Clone)]
 pub struct ServiceFactory {
     alloc: ServiceAllocator,
 }
 
+#[derive(Clone)]
 enum ServiceAllocator {
     Container {
         fun: fn(&Services) -> Result<ErasedArc, Error>,
     },
     Function {
-        fun: Box<dyn Fn(&Services) -> Result<ErasedArc, Error>>,
+        fun: Arc<dyn Fn(&Services) -> Result<ErasedArc, Error>>,
     },
     Default {
         fun: fn() -> ErasedArc,
@@ -46,7 +49,7 @@ impl ServiceFactory {
 
         Self {
             alloc: ServiceAllocator::Function {
-                fun: Box::new(wrapper),
+                fun: Arc::new(wrapper),
             },
         }
     }

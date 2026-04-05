@@ -1,14 +1,45 @@
 use crate::from_di::{DiFactory, FromDi};
-use crate::runtime::ErasedArc;
 use crate::runtime::ServiceFactory;
 use crate::runtime::TypeMeta;
+use crate::runtime::{ErasedArc, ErasedUnsizer};
+use std::collections::HashMap;
 use std::fmt::Debug;
 
 #[derive(Debug)]
 pub struct Binding {
     pub ty: TypeMeta,
-    pub lifetime: ServiceLifetime,
-    pub deps: &'static [TypeMeta],
+    pub kind: BindingKind,
+}
+
+#[derive(Debug)]
+pub enum BindingKind {
+    Type {
+        lifetime: ServiceLifetime,
+        deps: &'static [TypeMeta],
+    },
+    Alias {
+        impls: HashMap<TypeMeta, ErasedUnsizer>,
+    },
+}
+
+impl BindingKind {
+    pub fn unwrap_alias(self) -> HashMap<TypeMeta, ErasedUnsizer> {
+        match self {
+            BindingKind::Type { .. } => {
+                panic!("Called unwrap_alias on a Type binding")
+            }
+            BindingKind::Alias { impls } => impls,
+        }
+    }
+
+    pub fn unwrap_alias_mut(&mut self) -> &mut HashMap<TypeMeta, ErasedUnsizer> {
+        match self {
+            BindingKind::Type { .. } => {
+                panic!("Called unwrap_alias on a Type binding")
+            }
+            BindingKind::Alias { impls } => impls,
+        }
+    }
 }
 
 #[derive(Debug)]

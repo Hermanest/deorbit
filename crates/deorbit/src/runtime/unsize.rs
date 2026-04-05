@@ -1,4 +1,4 @@
-use crate::runtime::TypeMeta;
+use crate::runtime::{ErasedArc, TypeMeta};
 use std::mem;
 use std::sync::Arc;
 
@@ -12,11 +12,15 @@ pub enum Error {
 pub struct ErasedUnsizer {
     type_in: TypeMeta,
     type_out: TypeMeta,
-    fun: *const (),
+    typed_func: *const (),
+    erased_func: *const (),
 }
 
+type TypedFunc<T, K> = fn(Arc<T>) -> Arc<K>;
+type ErasedFunc<K> = fn(ErasedArc, typed: *const ()) -> Arc<K>;
+
 impl ErasedUnsizer {
-    pub fn try_from<T: 'static, K: ?Sized + 'static>(fun: fn(Arc<T>) -> Arc<K>) -> Option<Self> {
+    pub fn try_from<T: 'static, K: ?Sized + 'static>(func: TypedFunc<T, K>) -> Option<Self> {
         // Arc is either a fat or a thin pointer. While fat pointers are not guaranteed
         // to be exactly 2 * usize, thin pointers are always the same size as usize,
         // meaning we can determine whether this arc is a fat or a thin pointer easily
@@ -24,22 +28,38 @@ impl ErasedUnsizer {
             return None;
         }
 
+        let erased: ErasedFunc<K> = |arc: ErasedArc, typed: *const ()| {
+            let arc = arc.coerce::<T>().unwrap();
+            let typed: TypedFunc<T, K> = unsafe { mem::transmute(typed) };
+
+            typed(arc)
+        };
+
         Some(Self {
             type_in: TypeMeta::of::<T>(),
             type_out: TypeMeta::of::<K>(),
-            fun: fun as *const (),
+            typed_func: func as *const (),
+            erased_func: erased as *const (),
         })
     }
 
-    pub fn unsize<T: 'static, K: ?Sized + 'static>(&self, arc: Arc<T>) -> Result<Arc<K>, Error> {
-        if self.type_in != TypeMeta::of::<T>() || self.type_out != TypeMeta::of::<K>() {
+    pub fn type_in(&self) -> TypeMeta {
+        self.type_in
+    }
+
+    pub fn type_out(&self) -> TypeMeta {
+        self.type_out
+    }
+
+    pub fn unsize<K: ?Sized + 'static>(&self, arc: ErasedArc) -> Result<Arc<K>, Error> {
+        if self.type_in != arc.ty() || self.type_out != TypeMeta::of::<K>() {
             return Err(Error::MismatchedTypes);
         }
 
-        let arc_ptr = Arc::as_ptr(&arc) as *const ();
+        let arc_ptr = ErasedArc::as_ptr(&arc);
 
-        let fun: fn(Arc<T>) -> Arc<K> = unsafe { mem::transmute(self.fun) };
-        let unsized_arc = fun(arc);
+        let erased: ErasedFunc<K> = unsafe { mem::transmute(self.erased_func) };
+        let unsized_arc = erased(arc, self.typed_func);
 
         // Check data pointers on both arcs to ensure that user has provided an arc
         // pointing to the same location in memory
@@ -58,30 +78,30 @@ mod tests {
 
     #[test]
     fn test_unsizes() {
-        let arc = Arc::new(10);
+        let arc = ErasedArc::from_instance(10);
         let unsizer = ErasedUnsizer::try_from(|x: Arc<i32>| x as Arc<dyn Any>).unwrap();
 
-        assert!(matches!(unsizer.unsize::<_, dyn Any>(arc), Ok(..)));
+        assert!(matches!(unsizer.unsize::<dyn Any>(arc), Ok(..)));
     }
 
     #[test]
     fn test_fails_invalid_types() {
-        let arc = Arc::new(10i64);
+        let arc = ErasedArc::from_instance(10i64);
         let unsizer = ErasedUnsizer::try_from(|x: Arc<i32>| x as Arc<dyn Any>).unwrap();
 
         assert!(matches!(
-            unsizer.unsize::<_, dyn Any>(arc),
+            unsizer.unsize::<dyn Any>(arc),
             Err(Error::MismatchedTypes)
         ));
     }
 
     #[test]
     fn test_fails_external_data() {
-        let arc = Arc::new(10);
+        let arc = ErasedArc::from_instance(10);
         let unsizer = ErasedUnsizer::try_from(|x: Arc<i32>| Arc::new(1) as Arc<dyn Any>).unwrap();
 
         assert!(matches!(
-            unsizer.unsize::<_, dyn Any>(arc),
+            unsizer.unsize::<dyn Any>(arc),
             Err(Error::MismatchedData)
         ));
     }

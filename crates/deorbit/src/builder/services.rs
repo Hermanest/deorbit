@@ -1,8 +1,10 @@
 use crate::Services;
-use crate::binding::{Binding, ServiceLifetime};
+use crate::binding::{Binding, BindingKind, ServiceLifetime};
+use crate::builder::alias::AliasBuilder;
 use crate::builder::bind::BindingBuilder;
 use crate::resolver::Error;
-use crate::runtime::TypeMeta;
+use crate::runtime::{ErasedUnsizer, TypeMeta};
+use std::collections::HashMap;
 
 /// A builder for Services.
 #[derive(Default, Debug)]
@@ -24,16 +26,35 @@ impl ServicesBuilder {
         BindingBuilder::from_builder(self)
     }
 
-    pub(crate) fn add_binding<T: 'static>(&mut self, lifetime: ServiceLifetime, deps: &'static [TypeMeta]) {
+    pub fn bind_alias<T: ?Sized + 'static>(&mut self) -> AliasBuilder<'_, T> {
+        AliasBuilder::from_builder(self)
+    }
+
+    pub(crate) fn add_type_binding<T: 'static>(
+        &mut self,
+        lifetime: ServiceLifetime,
+        deps: &'static [TypeMeta],
+    ) {
         let binding = Binding {
             ty: TypeMeta::of::<T>(),
-            lifetime,
-            deps,
+            kind: BindingKind::Type { lifetime, deps },
         };
 
         self.bindings.push(binding);
     }
-    
+
+    pub(crate) fn add_alias_binding<T: ?Sized + 'static>(
+        &mut self,
+        impls: HashMap<TypeMeta, ErasedUnsizer>,
+    ) {
+        let binding = Binding {
+            ty: TypeMeta::of::<T>(),
+            kind: BindingKind::Alias { impls },
+        };
+
+        self.bindings.push(binding);
+    }
+
     pub(crate) fn to_vec(self) -> Vec<Binding> {
         self.bindings
     }
