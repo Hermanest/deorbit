@@ -10,6 +10,13 @@ pub struct TypeMeta {
     type_name: TypeName,
 }
 
+#[derive(Clone, Copy, Debug, Default)]
+pub enum TypeNameFormat {
+    #[default]
+    Minimal,
+    FullyQualified
+}
+
 #[derive(Clone, Copy)]
 enum TypeName {
     Hardcoded(&'static str),
@@ -32,17 +39,30 @@ impl TypeMeta {
         }
     }
 
-    pub fn type_name(&self) -> &'static str {
-        match self.type_name {
+    pub fn type_name(&self, format: TypeNameFormat) -> &'static str {
+        let str = match self.type_name {
             TypeName::Hardcoded(x) => x,
             TypeName::Dynamic(x) => x(),
+        };
+
+        match format {
+            TypeNameFormat::Minimal => {
+                if let Some(idx) = str.rfind("::") {
+                    &str[idx + 2..]
+                } else {
+                    str
+                }
+            }
+            TypeNameFormat::FullyQualified => {
+                str
+            }
         }
     }
 }
 
 impl Debug for TypeMeta {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.type_name())
+        write!(f, "{}", self.type_name(TypeNameFormat::Minimal))
     }
 }
 

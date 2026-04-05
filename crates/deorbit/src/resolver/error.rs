@@ -1,4 +1,4 @@
-use crate::runtime::TypeMeta;
+use crate::runtime::{TypeMeta, TypeNameFormat};
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]
@@ -27,7 +27,7 @@ impl Display for Error {
                         buffer += separator;
                     }
 
-                    buffer += meta.type_name();
+                    buffer += meta.type_name(TypeNameFormat::Minimal);
                 }
 
                 write!(
@@ -40,14 +40,14 @@ impl Display for Error {
                 write!(
                     f,
                     "Failed to resolve the graph due to a missing service of type {}",
-                    type_meta.type_name()
+                    type_meta.type_name(TypeNameFormat::Minimal)
                 )
             }
             Error::Duplicated { type_meta } => {
                 write!(
                     f,
                     "Failed to resolve the graph due to a duplicated binding of type {}",
-                    type_meta.type_name()
+                    type_meta.type_name(TypeNameFormat::Minimal)
                 )
             }
         }
