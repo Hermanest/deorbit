@@ -53,41 +53,9 @@ fn bind() {
 }
 ```
 
-### Example 3
-Sometimes things can get really tricky. Imagine you need to inject one service into another, pretty complicated, ain't it?
-Well, Deorbit handles this without hesitation:
-```rust
-#[derive(FromDi)]
-struct Foo {
-    a: Service<i32>,
-    bar: Service<Bar>,
-}
-
-#[derive(FromDi)]
-struct Bar {
-    a: Service<i32>,
-    foo: Service<Foo>,
-}
-
-fn bind() {
-    let mut builder = ServicesBuilder::new();
-
-    // Binding all necessary services
-    builder.bind_from(10i32); 
-    builder.bind::<Foo>();
-    builder.bind::<Bar>();
-
-    // Creating a Services instance
-    let services = builder.build().unwrap();
-
-    services.resolve::<Foo>().expect("Failed to resolve Foo");
-    services.resolve::<Bar>().expect("Failed to resolve Bar");
-}
-```
-
 ## Why?
-There are currently no DI frameworks for Rust that could fulfill all needs for advanced and modular applications: automatic service wiring, circular dependecy resolution, abstractions.
-Deorbit comes to fix this by providing a wide range of tools hence covering most cases. 
+There are currently no DI frameworks for Rust that could fulfill all needs for advanced modular applications.
+Deorbit comes to fix this by providing a wide range of tools like automatic service wiring and trait resolution. 
 
 ## Why the name? 
 Well, initially this framework was planned as actix-specific. I wanted to bind the name with some of the existing frameworks and haven't came up with anything better than relating to Rocket.
@@ -96,6 +64,6 @@ And as the project switched targeting to a much wider audience, I've added a "di
 
 ## Roadmap
 Currently the project is rather an MVP than something production-ready, so here's a roadmap for further changes:
-- [ ] Add service lifetimes (singleton, transient)
-- [ ] Add abstraction bindinds
+- [x] Add service lifetimes (singleton, transient)
+- [x] Add abstraction bindinds
 - [ ] Add support for actix and axum frameworks as a separate feature
