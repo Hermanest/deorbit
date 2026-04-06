@@ -15,7 +15,7 @@ impl<'a, T: 'static> BindingBuilder<'a, T> {
     pub(crate) fn from_builder(builder: &'a mut ServicesBuilder) -> Self {
         Self {
             builder,
-            bind_self: false,
+            bind_self: true,
             ph: PhantomData,
         }
     }
@@ -46,9 +46,11 @@ pub struct SingletonBindingBuilder<'a, T: 'static> {
 impl<'a, T: 'static> SingletonBindingBuilder<'a, T> {
     /// Finalizes the binding with an instance.
     pub fn from(self, instance: T) {
-        self.builder
-            .builder
-            .add_type_binding::<T>(BindingLifetime::singleton_from(instance), &[]);
+        self.builder.builder.add_type_binding::<T>(
+            self.builder.bind_self,
+            BindingLifetime::singleton_from(instance),
+            &[],
+        );
     }
 }
 
@@ -56,9 +58,11 @@ impl<'a, T: 'static> SingletonBindingBuilder<'a, T> {
 impl<'a, T: Default + 'static> SingletonBindingBuilder<'a, T> {
     /// Finalizes the binding with a default value.
     pub fn from_default(self) {
-        self.builder
-            .builder
-            .add_type_binding::<T>(BindingLifetime::singleton_from_default::<T>(), &[]);
+        self.builder.builder.add_type_binding::<T>(
+            self.builder.bind_self,
+            BindingLifetime::singleton_from_default::<T>(),
+            &[],
+        );
     }
 }
 
@@ -66,9 +70,11 @@ impl<'a, T: Default + 'static> SingletonBindingBuilder<'a, T> {
 impl<'a, T: FromDi + 'static> SingletonBindingBuilder<'a, T> {
     /// Finalizes the binding with an automatically resolved instance.
     pub fn from_di(self) {
-        self.builder
-            .builder
-            .add_type_binding::<T>(BindingLifetime::singleton_from_di::<T>(), T::depends_on());
+        self.builder.builder.add_type_binding::<T>(
+            self.builder.bind_self,
+            BindingLifetime::singleton_from_di::<T>(),
+            T::depends_on(),
+        );
     }
 }
 
@@ -81,9 +87,11 @@ pub struct TransientBindingBuilder<'a, T: 'static> {
 impl<'a, T: 'static> TransientBindingBuilder<'a, T> {
     /// Finalizes the binding with an instance resolved via the specified factory.
     pub fn from_fn<F: DiFactory<T, Args>, Args>(self, factory: F) {
-        self.builder
-            .builder
-            .add_type_binding::<T>(BindingLifetime::transient_from_fn(factory), F::depends_on());
+        self.builder.builder.add_type_binding::<T>(
+            self.builder.bind_self,
+            BindingLifetime::transient_from_fn(factory),
+            F::depends_on(),
+        );
     }
 }
 
@@ -91,9 +99,11 @@ impl<'a, T: 'static> TransientBindingBuilder<'a, T> {
 impl<'a, T: FromDi + 'static> TransientBindingBuilder<'a, T> {
     /// Finalizes the binding with an automatically resolved instance.
     pub fn from_di(self) {
-        self.builder
-            .builder
-            .add_type_binding::<T>(BindingLifetime::transient_from_di::<T>(), T::depends_on());
+        self.builder.builder.add_type_binding::<T>(
+            self.builder.bind_self,
+            BindingLifetime::transient_from_di::<T>(),
+            T::depends_on(),
+        );
     }
 }
 
@@ -101,8 +111,10 @@ impl<'a, T: FromDi + 'static> TransientBindingBuilder<'a, T> {
 impl<'a, T: Default + 'static> TransientBindingBuilder<'a, T> {
     /// Finalizes the binding with a default value.
     pub fn from_default(self) {
-        self.builder
-            .builder
-            .add_type_binding::<T>(BindingLifetime::transient_from_default::<T>(), &[]);
+        self.builder.builder.add_type_binding::<T>(
+            self.builder.bind_self,
+            BindingLifetime::transient_from_default::<T>(),
+            &[],
+        );
     }
 }

@@ -32,12 +32,13 @@ impl ServicesBuilder {
 
     pub(crate) fn add_type_binding<T: 'static>(
         &mut self,
+        bind_self: bool,
         lifetime: BindingLifetime,
         deps: &'static [TypeMeta],
     ) {
         let binding = Binding {
             ty: TypeMeta::of::<T>(),
-            kind: BindingKind::Type { lifetime, deps },
+            kind: BindingKind::Type { lifetime, deps, bind_self },
         };
 
         self.bindings.push(binding);

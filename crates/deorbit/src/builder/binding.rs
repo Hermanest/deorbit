@@ -16,6 +16,8 @@ pub struct Binding {
 #[derive(Debug)]
 pub enum BindingKind {
     Type {
+        /// Whether this type should be exposed directly.
+        bind_self: bool,
         lifetime: BindingLifetime,
         deps: &'static [TypeMeta],
     },

@@ -1,9 +1,9 @@
-use crate::builder::{BindingKind, BindingLifetime};
 use crate::builder::ServicesBuilder;
+use crate::builder::{Binding, BindingKind, BindingLifetime};
 use crate::either_iter::EitherIter;
 use crate::mbmany::OneOrMany;
-use crate::resolver::graph;
 use crate::resolver::Error;
+use crate::resolver::graph;
 use crate::runtime::ServiceFactory;
 use crate::runtime::TypeMeta;
 use crate::runtime::{ErasedArc, ErasedUnsizer};
@@ -65,6 +65,16 @@ impl Services {
         let bindings = graph::merge_aliases(bindings);
         let bindings = graph::resolve_order(bindings)?;
 
+        // Bindings that shouldn't be exposed under their types
+        // will be removed after construction
+        let unbind: Vec<_> = bindings
+            .iter()
+            .filter_map(|x| match x.kind {
+                BindingKind::Type { bind_self, .. } if !bind_self => Some(x.ty),
+                _ => None,
+            })
+            .collect();
+
         let mut services = Self {
             services: HashMap::new(),
         };
@@ -93,6 +103,12 @@ impl Services {
             };
 
             services.services.insert(ty, binding);
+        }
+
+        // Removing unexposed bindings as they're 
+        // not needed for resolution anymore
+        for ty in unbind {
+            services.services.remove(&ty);
         }
 
         Ok(services)
