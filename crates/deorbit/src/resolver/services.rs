@@ -1,11 +1,14 @@
 use crate::binding::{BindingKind, ServiceLifetime, SingletonProvider};
 use crate::builder::ServicesBuilder;
+use crate::either_iter::EitherIter;
+use crate::mbmany::OneOrMany;
 use crate::resolver::Error;
 use crate::resolver::graph;
 use crate::runtime::ServiceFactory;
 use crate::runtime::TypeMeta;
 use crate::runtime::{ErasedArc, ErasedUnsizer};
 use std::collections::HashMap;
+use std::iter;
 use std::sync::Arc;
 
 pub type Service<T> = Arc<T>;
@@ -22,8 +25,7 @@ enum ImmutableBinding {
         binding: ImmutableTypeBinding,
     },
     Alias {
-        // TODO: change to OneOrMany to remove a level of indirection
-        impls: Vec<(ErasedUnsizer, ImmutableTypeBinding)>,
+        impls: OneOrMany<(ErasedUnsizer, ImmutableTypeBinding)>,
     },
 }
 
@@ -103,22 +105,40 @@ impl Services {
 }
 
 impl Services {
-    pub fn resolve<T: ?Sized + 'static>(&self) -> Option<Service<T>> {
+    /// Returns a lazy iterator over all members of type T.
+    /// If T is concrete, the iter will always contain a single element.
+    pub fn resolve_all<T: ?Sized + 'static>(
+        &self,
+    ) -> Option<impl DoubleEndedIterator<Item=Service<T>>> {
         let type_meta = TypeMeta::of::<T>();
 
         self.services.get(&type_meta).map(|x| match x {
-            ImmutableBinding::Type { binding } => self.resolve_type(binding).coerce::<T>().unwrap(),
-            ImmutableBinding::Alias { impls } => {
-                // Takes the last implementation
-                let (unsizer, binding) = impls.last().unwrap();
-                let arc = self.resolve_type(binding);
+            ImmutableBinding::Type { binding } => {
+                let iter = iter::once(binding)
+                    .map(|binding| self.get_instance(binding).coerce::<T>().unwrap());
 
-                unsizer.unsize(arc).expect("Failed while trying to unsize")
+                EitherIter::Left(iter)
+            }
+            ImmutableBinding::Alias { impls } => {
+                let iter = impls.into_iter().map(|(unsizer, binding)| {
+                    let arc = self.get_instance(binding);
+
+                    unsizer
+                        .unsize::<T>(arc)
+                        .expect("Failed while trying to unsize")
+                });
+
+                EitherIter::Right(iter)
             }
         })
     }
 
-    fn resolve_type(&self, binding: &ImmutableTypeBinding) -> ErasedArc {
+    /// Returns the last binding of type T. For concrete T, there is always a single instance.
+    pub fn resolve<T: ?Sized + 'static>(&self) -> Option<Service<T>> {
+        self.resolve_all().map(|mut x| x.next_back().unwrap())
+    }
+
+    fn get_instance(&self, binding: &ImmutableTypeBinding) -> ErasedArc {
         match binding {
             ImmutableTypeBinding::Singleton(arc) => arc.clone(),
             // Transient is designed to panic because dependencies are validated beforehand,
