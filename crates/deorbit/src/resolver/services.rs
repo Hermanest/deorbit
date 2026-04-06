@@ -1,4 +1,4 @@
-use crate::builder::{BindingKind, ServiceLifetime};
+use crate::builder::{BindingKind, BindingLifetime};
 use crate::builder::ServicesBuilder;
 use crate::either_iter::EitherIter;
 use crate::mbmany::OneOrMany;
@@ -47,10 +47,10 @@ enum ImmutableTypeBinding {
 }
 
 impl ImmutableTypeBinding {
-    fn from(value: ServiceLifetime, services: &Services) -> Result<Self, Error> {
+    fn from(value: BindingLifetime, services: &Services) -> Result<Self, Error> {
         let binding = match value {
-            ServiceLifetime::Singleton(x) => Self::Singleton(x.to_instance(services)?),
-            ServiceLifetime::Transient(x) => Self::Transient(x),
+            BindingLifetime::Singleton(x) => Self::Singleton(x.to_instance(services)?),
+            BindingLifetime::Transient(x) => Self::Transient(x),
         };
 
         Ok(binding)

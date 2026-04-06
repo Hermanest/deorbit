@@ -16,7 +16,7 @@ pub struct Binding {
 #[derive(Debug)]
 pub enum BindingKind {
     Type {
-        lifetime: ServiceLifetime,
+        lifetime: BindingLifetime,
         deps: &'static [TypeMeta],
     },
     Alias {
@@ -60,12 +60,12 @@ impl SingletonProvider {
 }
 
 #[derive(Debug)]
-pub enum ServiceLifetime {
+pub enum BindingLifetime {
     Singleton(SingletonProvider),
     Transient(ServiceFactory),
 }
 
-impl ServiceLifetime {
+impl BindingLifetime {
     pub fn singleton_from<T: 'static>(service: T) -> Self {
         let arc = ErasedArc::from_instance(service);
 

@@ -1,7 +1,7 @@
 use crate::Services;
-use crate::builder::{Binding, BindingKind, ServiceLifetime};
+use crate::builder::{Binding, BindingKind, BindingLifetime};
 use crate::builder::alias::AliasBuilder;
-use crate::builder::bind::BindingBuilder;
+use crate::builder::binder::BindingBuilder;
 use crate::resolver::Error;
 use crate::runtime::{ErasedUnsizer, TypeMeta};
 use std::collections::HashMap;
@@ -32,7 +32,7 @@ impl ServicesBuilder {
 
     pub(crate) fn add_type_binding<T: 'static>(
         &mut self,
-        lifetime: ServiceLifetime,
+        lifetime: BindingLifetime,
         deps: &'static [TypeMeta],
     ) {
         let binding = Binding {

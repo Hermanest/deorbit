@@ -1,4 +1,4 @@
-use crate::builder::ServiceLifetime;
+use crate::builder::BindingLifetime;
 use crate::builder::ServicesBuilder;
 use crate::from_di::{DiFactory, FromDi};
 use std::marker::PhantomData;
@@ -48,7 +48,7 @@ impl<'a, T: 'static> SingletonBindingBuilder<'a, T> {
     pub fn from(self, instance: T) {
         self.builder
             .builder
-            .add_type_binding::<T>(ServiceLifetime::singleton_from(instance), &[]);
+            .add_type_binding::<T>(BindingLifetime::singleton_from(instance), &[]);
     }
 }
 
@@ -58,7 +58,7 @@ impl<'a, T: Default + 'static> SingletonBindingBuilder<'a, T> {
     pub fn from_default(self) {
         self.builder
             .builder
-            .add_type_binding::<T>(ServiceLifetime::singleton_from_default::<T>(), &[]);
+            .add_type_binding::<T>(BindingLifetime::singleton_from_default::<T>(), &[]);
     }
 }
 
@@ -68,7 +68,7 @@ impl<'a, T: FromDi + 'static> SingletonBindingBuilder<'a, T> {
     pub fn from_di(self) {
         self.builder
             .builder
-            .add_type_binding::<T>(ServiceLifetime::singleton_from_di::<T>(), T::depends_on());
+            .add_type_binding::<T>(BindingLifetime::singleton_from_di::<T>(), T::depends_on());
     }
 }
 
@@ -83,7 +83,7 @@ impl<'a, T: 'static> TransientBindingBuilder<'a, T> {
     pub fn from_fn<F: DiFactory<T, Args>, Args>(self, factory: F) {
         self.builder
             .builder
-            .add_type_binding::<T>(ServiceLifetime::transient_from_fn(factory), F::depends_on());
+            .add_type_binding::<T>(BindingLifetime::transient_from_fn(factory), F::depends_on());
     }
 }
 
@@ -93,7 +93,7 @@ impl<'a, T: FromDi + 'static> TransientBindingBuilder<'a, T> {
     pub fn from_di(self) {
         self.builder
             .builder
-            .add_type_binding::<T>(ServiceLifetime::transient_from_di::<T>(), T::depends_on());
+            .add_type_binding::<T>(BindingLifetime::transient_from_di::<T>(), T::depends_on());
     }
 }
 
@@ -103,6 +103,6 @@ impl<'a, T: Default + 'static> TransientBindingBuilder<'a, T> {
     pub fn from_default(self) {
         self.builder
             .builder
-            .add_type_binding::<T>(ServiceLifetime::transient_from_default::<T>(), &[]);
+            .add_type_binding::<T>(BindingLifetime::transient_from_default::<T>(), &[]);
     }
 }

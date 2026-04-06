@@ -1,7 +1,7 @@
 mod alias;
-pub mod bind;
+pub mod binder;
 pub mod binding;
 pub mod services;
 
-pub use binding::{Binding, BindingKind, ServiceLifetime};
+pub use binding::{Binding, BindingKind, BindingLifetime};
 pub use services::ServicesBuilder;
