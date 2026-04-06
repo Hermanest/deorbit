@@ -1,4 +1,3 @@
-mod binding;
 mod builder;
 mod either_iter;
 mod from_di;

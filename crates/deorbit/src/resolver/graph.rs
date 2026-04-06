@@ -1,5 +1,5 @@
 use crate::TypeMeta;
-use crate::binding::{Binding, BindingKind};
+use crate::builder::binding::{Binding, BindingKind};
 use crate::resolver::Error;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;

@@ -1,9 +1,9 @@
-use crate::binding::{BindingKind, ServiceLifetime, SingletonProvider};
+use crate::builder::{BindingKind, ServiceLifetime};
 use crate::builder::ServicesBuilder;
 use crate::either_iter::EitherIter;
 use crate::mbmany::OneOrMany;
-use crate::resolver::Error;
 use crate::resolver::graph;
+use crate::resolver::Error;
 use crate::runtime::ServiceFactory;
 use crate::runtime::TypeMeta;
 use crate::runtime::{ErasedArc, ErasedUnsizer};

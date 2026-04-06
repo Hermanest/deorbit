@@ -1,5 +1,5 @@
 use crate::Services;
-use crate::binding::{Binding, BindingKind, ServiceLifetime};
+use crate::builder::{Binding, BindingKind, ServiceLifetime};
 use crate::builder::alias::AliasBuilder;
 use crate::builder::bind::BindingBuilder;
 use crate::resolver::Error;
