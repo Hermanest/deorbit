@@ -48,19 +48,12 @@ enum ImmutableTypeBinding {
 
 impl ImmutableTypeBinding {
     fn from(value: ServiceLifetime, services: &Services) -> Result<Self, Error> {
-        let entry = match value {
-            ServiceLifetime::Singleton(x) => {
-                let instance = match x {
-                    SingletonProvider::Instance(x) => x,
-                    SingletonProvider::Factory(x) => x.produce(services)?,
-                };
-
-                Self::Singleton(instance)
-            }
+        let binding = match value {
+            ServiceLifetime::Singleton(x) => Self::Singleton(x.to_instance(services)?),
             ServiceLifetime::Transient(x) => Self::Transient(x),
         };
 
-        Ok(entry)
+        Ok(binding)
     }
 }
 
@@ -84,16 +77,18 @@ impl Services {
                     binding: ImmutableTypeBinding::from(lifetime, &services)?,
                 },
                 BindingKind::Alias { impls } => {
-                    let impls = impls
-                        .iter()
-                        .map(|(meta, unsizer)| {
-                            let binding = services.services.get(meta).unwrap();
+                    ImmutableBinding::Alias {
+                        impls: impls
+                            .iter()
+                            .map(|(meta, unsizer)| {
+                                // Bindings are sorted, so it's guaranteed that all
+                                // underlying types are already presented in the map
+                                let binding = services.services.get(meta).unwrap();
 
-                            (unsizer.clone(), binding.unwrap_type().clone())
-                        })
-                        .collect();
-
-                    ImmutableBinding::Alias { impls }
+                                (unsizer.clone(), binding.unwrap_type().clone())
+                            })
+                            .collect(),
+                    }
                 }
             };
 
@@ -107,9 +102,10 @@ impl Services {
 impl Services {
     /// Returns a lazy iterator over all members of type T.
     /// If T is concrete, the iter will always contain a single element.
-    pub fn resolve_all<T: ?Sized + 'static>(
-        &self,
-    ) -> Option<impl DoubleEndedIterator<Item=Service<T>>> {
+    pub fn resolve_all<T>(&self) -> Option<impl DoubleEndedIterator<Item = Service<T>>>
+    where
+        T: ?Sized + 'static,
+    {
         let type_meta = TypeMeta::of::<T>();
 
         self.services.get(&type_meta).map(|x| match x {

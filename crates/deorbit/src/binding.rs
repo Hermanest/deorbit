@@ -4,6 +4,8 @@ use crate::runtime::TypeMeta;
 use crate::runtime::{ErasedArc, ErasedUnsizer};
 use std::collections::HashMap;
 use std::fmt::Debug;
+use crate::resolver::Error;
+use crate::Services;
 
 #[derive(Debug)]
 pub struct Binding {
@@ -46,6 +48,15 @@ impl BindingKind {
 pub enum SingletonProvider {
     Instance(ErasedArc),
     Factory(ServiceFactory),
+}
+
+impl SingletonProvider {
+    pub fn to_instance(self, services: &Services) -> Result<ErasedArc, Error> {
+        match self {
+            SingletonProvider::Instance(x) => Ok(x),
+            SingletonProvider::Factory(x) => x.produce(services),
+        }
+    }
 }
 
 #[derive(Debug)]
