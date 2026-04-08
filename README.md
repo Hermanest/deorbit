@@ -118,7 +118,7 @@ You might notice that to bind a trait you need to use a closure
 bind_alias::<dyn Any>().to::<i32>(|x| x).done()
 ```
 But isn't it weird? Well, this design decision comes from how rust does things. The main problem is, there is no stable api to turn a conrete instance into an unsized dyn yet
-(look for `Unsized` trait for more details). Currently the only way to unsize an object is to implicitly coerce it in-place, so the snippet below will turn an instance of `Arc<i32>` into `Arc<dyn Any>`. 
+(look for `Unsize` trait for more details). Currently the only way to unsize an object is to implicitly coerce it in-place, so the snippet below will turn an instance of `Arc<i32>` into `Arc<dyn Any>`. 
 ```
 let unsized: Arc<dyn Any> = Arc::new(10)
 ```
@@ -126,7 +126,7 @@ And that's why closures are there, when you call `.to::<Type>(|x| x)`, the closu
 returns a coerced instance. To add a bit of clarity, the previous snippet is semantically similar to `.to(|x: Arc<Type>| x as Arc<dyn Any>)`, it's just the rust compiler
 that eliminates the need of specifying types manually by inferring them from previous calls.
 
-This syntax could be replaced in future releases if `Unsized` will be become stable.
+This syntax could be replaced in future releases if `Unsize` will be become stable.
 
 ## Why the name? 
 Well, initially this framework was planned as actix-specific. I wanted to bind the name with some of the existing frameworks and haven't came up with anything better than relating to Rocket.
