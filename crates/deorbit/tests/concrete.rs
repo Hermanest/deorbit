@@ -1,35 +1,64 @@
+use std::sync::Arc;
 use deorbit::{Error, FromDi, Service, ServicesBuilder};
-use std::any::Any;
 
 #[test]
-fn binds_concrete() -> Result<(), Error> {
-    #[derive(FromDi)]
-    struct Foo {
-        a: Service<i32>,
-    }
-
-    #[derive(FromDi)]
-    struct Bar {
-        a: Service<Foo>,
-    }
-
+fn binds_single() {
     let mut builder = ServicesBuilder::new();
 
-    builder.bind::<i32>().not_self().singleton().from(10);
-    builder.bind_alias::<dyn Any>().to::<i32>(|x| x).done();
+    let num = 10;
+    builder.bind::<i32>().singleton().from(num);
 
-    builder.bind::<Bar>().singleton().from_di();
-    builder.bind::<Foo>().singleton().from_di();
+    let services = builder.build().unwrap();
+    let res = services.resolve::<i32>();
 
-    let services = builder.build()?;
+    assert!(matches!(res, Some(x) if *x == num));
+}
 
-    services.resolve::<Foo>().expect("Failed to resolve Foo");
-    services.resolve::<Bar>().expect("Failed to resolve Bar");
-    services
-        .resolve::<dyn Any>()
-        .expect("Failed to resolve dyn Any");
+#[test]
+fn binds_multiple() {
+    let mut builder = ServicesBuilder::new();
 
-    Ok(())
+    let num1 = 10;
+    let num2 = 20;
+
+    builder.bind::<i32>().singleton().from(num1);
+    builder.bind::<i64>().singleton().from(num2);
+
+    let services = builder.build().unwrap();
+
+    let res1 = services.resolve::<i32>();
+    let res2 = services.resolve::<i64>();
+
+    assert!(matches!(res1, Some(x) if *x == num1));
+    assert!(matches!(res2, Some(x) if *x == num2));
+}
+
+#[test]
+fn resolves_same_singleton() {
+    let mut builder = ServicesBuilder::new();
+
+    builder.bind::<i32>().singleton().from(10);
+
+    let services = builder.build().unwrap();
+
+    let res1 = services.resolve::<i32>().unwrap();
+    let res2 = services.resolve::<i32>().unwrap();
+
+    assert_eq!(Arc::as_ptr(&res1), Arc::as_ptr(&res2));
+}
+
+#[test]
+fn resolves_new_transient() {
+    let mut builder = ServicesBuilder::new();
+
+    builder.bind::<i32>().transient().from_fn(|| 10);
+
+    let services = builder.build().unwrap();
+
+    let res1 = services.resolve::<i32>().unwrap();
+    let res2 = services.resolve::<i32>().unwrap();
+
+    assert_ne!(Arc::as_ptr(&res1), Arc::as_ptr(&res2));
 }
 
 #[test]
