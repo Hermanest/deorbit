@@ -1,7 +1,7 @@
 use crate::utils::resolve_crate;
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
-use syn::{spanned::Spanned, Attribute, DeriveInput, Error, Field, Fields, Result, Type};
+use quote::{ToTokens, quote};
+use syn::{Attribute, DeriveInput, Error, Field, Fields, Result, Type, spanned::Spanned};
 
 #[derive(Default, Copy, Clone, Eq, PartialEq)]
 enum FieldBindingKind {
@@ -13,6 +13,7 @@ enum FieldBindingKind {
 struct FieldBinding<'a> {
     field: &'a Field,
     actual_type: Type,
+    many: bool,
     kind: FieldBindingKind,
 }
 
@@ -40,7 +41,10 @@ pub fn expand_from_di(derive: DeriveInput) -> Result<TokenStream> {
     Ok(ts)
 }
 
-fn expand_dependencies(crate_name: &TokenStream, fields: &Vec<FieldBinding>) -> Result<TokenStream> {
+fn expand_dependencies(
+    crate_name: &TokenStream,
+    fields: &Vec<FieldBinding>,
+) -> Result<TokenStream> {
     let deps = fields
         .iter()
         .filter(|x| x.kind == FieldBindingKind::Resolved)
@@ -90,8 +94,14 @@ fn expand_field_initializer(field: &FieldBinding) -> Result<TokenStream> {
             let field_type = field.actual_type.to_token_stream();
             let err_msg = format!("Failed to resolve {}", field_type);
 
-            quote! {
-                #ident: services.resolve().expect(#err_msg)
+            if field.many {
+                quote! {
+                    #ident: services.resolve_all().expect(#err_msg).collect::<Vec<_>>()
+                }
+            } else {
+                quote! {
+                    #ident: services.resolve().expect(#err_msg)
+                }
             }
         }
     };
@@ -123,31 +133,40 @@ fn extract_fields(derive: &'_ DeriveInput) -> Result<Vec<FieldBinding<'_>>> {
         .iter()
         .map(|field| {
             let kind = parse_field_attr(&field.attrs)?;
-            let ty = extract_service_type(&field.ty);
+            let (ty, many) = extract_service_type(&field.ty);
 
             Ok(FieldBinding {
                 field,
                 actual_type: ty.clone(),
+                many,
                 kind,
             })
         })
         .collect()
 }
 
-fn extract_service_type(ty: &Type) -> &Type {
+fn extract_service_type(ty: &Type) -> (&Type, bool) {
     if let Type::Path(type_path) = ty {
         let segment = type_path.path.segments.last().unwrap();
 
-        if segment.ident == "Service" {
+        let resolved = if segment.ident == "Resolved" {
+            Some(false)
+        } else if segment.ident == "ResolvedMany" {
+            Some(true)
+        } else {
+            None
+        };
+
+        if let Some(many) = resolved {
             if let syn::PathArguments::AngleBracketed(args) = &segment.arguments {
                 if let Some(syn::GenericArgument::Type(inner_ty)) = args.args.first() {
-                    return inner_ty;
+                    return (inner_ty, many);
                 }
             }
         }
     }
 
-    ty
+    (ty, false)
 }
 
 fn parse_field_attr(attrs: &[Attribute]) -> Result<FieldBindingKind> {

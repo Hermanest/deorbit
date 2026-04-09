@@ -1,17 +1,15 @@
 use crate::builder::ServicesBuilder;
-use crate::builder::{Binding, BindingKind, BindingLifetime};
+use crate::builder::{BindingKind, BindingLifetime};
 use crate::either_iter::EitherIter;
 use crate::mbmany::OneOrMany;
 use crate::resolver::Error;
 use crate::resolver::graph;
+use crate::resolver::resolved::Resolved;
 use crate::runtime::ServiceFactory;
 use crate::runtime::TypeMeta;
 use crate::runtime::{ErasedArc, ErasedUnsizer};
 use std::collections::HashMap;
 use std::iter;
-use std::sync::Arc;
-
-pub type Service<T> = Arc<T>;
 
 /// A collection of services.
 #[derive(Debug)]
@@ -105,7 +103,7 @@ impl Services {
             services.services.insert(ty, binding);
         }
 
-        // Removing unexposed bindings as they're 
+        // Removing unexposed bindings as they're
         // not needed for resolution anymore
         for ty in unbind {
             services.services.remove(&ty);
@@ -118,7 +116,7 @@ impl Services {
 impl Services {
     /// Returns a lazy iterator over all members of type T.
     /// If T is concrete, the iter will always contain a single element.
-    pub fn resolve_all<T>(&self) -> Option<impl DoubleEndedIterator<Item = Service<T>>>
+    pub fn resolve_all<T>(&self) -> Option<impl DoubleEndedIterator<Item = Resolved<T>>>
     where
         T: ?Sized + 'static,
     {
@@ -146,7 +144,7 @@ impl Services {
     }
 
     /// Returns the last binding of type T. For concrete T, there is always a single instance.
-    pub fn resolve<T: ?Sized + 'static>(&self) -> Option<Service<T>> {
+    pub fn resolve<T: ?Sized + 'static>(&self) -> Option<Resolved<T>> {
         self.resolve_all().map(|mut x| x.next_back().unwrap())
     }
 

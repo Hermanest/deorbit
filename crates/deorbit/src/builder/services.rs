@@ -1,7 +1,7 @@
 use crate::Services;
 use crate::builder::{Binding, BindingKind, BindingLifetime};
 use crate::builder::alias::AliasBuilder;
-use crate::builder::binder::BindingBuilder;
+use crate::builder::concrete::ConcreteBuilder;
 use crate::resolver::Error;
 use crate::runtime::{ErasedUnsizer, TypeMeta};
 use std::collections::HashMap;
@@ -22,8 +22,8 @@ impl ServicesBuilder {
     }
 
     /// Binds a service using automatic instantiation.
-    pub fn bind<T: 'static>(&mut self) -> BindingBuilder<'_, T> {
-        BindingBuilder::from_builder(self)
+    pub fn bind<T: 'static>(&mut self) -> ConcreteBuilder<'_, T> {
+        ConcreteBuilder::from_builder(self)
     }
 
     pub fn bind_alias<T: ?Sized + 'static>(&mut self) -> AliasBuilder<'_, T> {

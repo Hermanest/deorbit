@@ -5,13 +5,13 @@ use std::marker::PhantomData;
 
 /// The outermost builder containing no info but the type.
 #[derive(Debug)]
-pub struct BindingBuilder<'a, T: 'static> {
+pub struct ConcreteBuilder<'a, T: 'static> {
     builder: &'a mut ServicesBuilder,
     bind_self: bool,
     ph: PhantomData<T>,
 }
 
-impl<'a, T: 'static> BindingBuilder<'a, T> {
+impl<'a, T: 'static> ConcreteBuilder<'a, T> {
     pub(crate) fn from_builder(builder: &'a mut ServicesBuilder) -> Self {
         Self {
             builder,
@@ -28,22 +28,22 @@ impl<'a, T: 'static> BindingBuilder<'a, T> {
     }
 
     /// Transfers the flow to a singleton builder.
-    pub fn singleton(self) -> SingletonBindingBuilder<'a, T> {
-        SingletonBindingBuilder { builder: self }
+    pub fn singleton(self) -> SingletonConcreteBuilder<'a, T> {
+        SingletonConcreteBuilder { builder: self }
     }
 
     /// Transfers the flow to a transient builder.
-    pub fn transient(self) -> TransientBindingBuilder<'a, T> {
-        TransientBindingBuilder { builder: self }
+    pub fn transient(self) -> TransientConcreteBuilder<'a, T> {
+        TransientConcreteBuilder { builder: self }
     }
 }
 
 /// A singleton lifetime builder for a type.
-pub struct SingletonBindingBuilder<'a, T: 'static> {
-    builder: BindingBuilder<'a, T>,
+pub struct SingletonConcreteBuilder<'a, T: 'static> {
+    builder: ConcreteBuilder<'a, T>,
 }
 
-impl<'a, T: 'static> SingletonBindingBuilder<'a, T> {
+impl<'a, T: 'static> SingletonConcreteBuilder<'a, T> {
     /// Finalizes the binding with an instance.
     pub fn from(self, instance: T) {
         self.builder.builder.add_type_binding::<T>(
@@ -55,7 +55,7 @@ impl<'a, T: 'static> SingletonBindingBuilder<'a, T> {
 }
 
 #[allow(clippy::wrong_self_convention)]
-impl<'a, T: Default + 'static> SingletonBindingBuilder<'a, T> {
+impl<'a, T: Default + 'static> SingletonConcreteBuilder<'a, T> {
     /// Finalizes the binding with a default value.
     pub fn from_default(self) {
         self.builder.builder.add_type_binding::<T>(
@@ -67,7 +67,7 @@ impl<'a, T: Default + 'static> SingletonBindingBuilder<'a, T> {
 }
 
 #[allow(clippy::wrong_self_convention)]
-impl<'a, T: FromDi + 'static> SingletonBindingBuilder<'a, T> {
+impl<'a, T: FromDi + 'static> SingletonConcreteBuilder<'a, T> {
     /// Finalizes the binding with an automatically resolved instance.
     pub fn from_di(self) {
         self.builder.builder.add_type_binding::<T>(
@@ -79,12 +79,12 @@ impl<'a, T: FromDi + 'static> SingletonBindingBuilder<'a, T> {
 }
 
 /// A transient lifetime builder for a type.
-pub struct TransientBindingBuilder<'a, T: 'static> {
-    builder: BindingBuilder<'a, T>,
+pub struct TransientConcreteBuilder<'a, T: 'static> {
+    builder: ConcreteBuilder<'a, T>,
 }
 
 #[allow(clippy::wrong_self_convention)]
-impl<'a, T: 'static> TransientBindingBuilder<'a, T> {
+impl<'a, T: 'static> TransientConcreteBuilder<'a, T> {
     /// Finalizes the binding with an instance resolved via the specified factory.
     pub fn from_fn<F: DiFactory<T, Args>, Args>(self, factory: F) {
         self.builder.builder.add_type_binding::<T>(
@@ -96,7 +96,7 @@ impl<'a, T: 'static> TransientBindingBuilder<'a, T> {
 }
 
 #[allow(clippy::wrong_self_convention)]
-impl<'a, T: FromDi + 'static> TransientBindingBuilder<'a, T> {
+impl<'a, T: FromDi + 'static> TransientConcreteBuilder<'a, T> {
     /// Finalizes the binding with an automatically resolved instance.
     pub fn from_di(self) {
         self.builder.builder.add_type_binding::<T>(
@@ -108,7 +108,7 @@ impl<'a, T: FromDi + 'static> TransientBindingBuilder<'a, T> {
 }
 
 #[allow(clippy::wrong_self_convention)]
-impl<'a, T: Default + 'static> TransientBindingBuilder<'a, T> {
+impl<'a, T: Default + 'static> TransientConcreteBuilder<'a, T> {
     /// Finalizes the binding with a default value.
     pub fn from_default(self) {
         self.builder.builder.add_type_binding::<T>(

@@ -23,7 +23,8 @@ macro_rules! impl_factory {
     ($name:ident, $closure:ident, ($($this:tt)+), ($($this_arg:tt)+), $($args:ident),*) => {
         impl<F, O, $($args),*> $name<O, ($($args),*,)> for F
         where
-            F: $closure($($crate::Service<$args>),*) -> O + 'static,
+            $($args: $crate::FromDi,)*
+            F: $closure($($args),*) -> O + 'static,
             O: 'static,
             $($args: 'static),*
         {
@@ -37,7 +38,7 @@ macro_rules! impl_factory {
 
             fn produce($($this)+, services: &$crate::Services) -> O {
                 ($($this_arg)+)(
-                    $(services.resolve::<$args>().expect("")),*
+                    $($args::produce(services)),*
                 )
             }
         }
@@ -61,13 +62,31 @@ macro_rules! impl_all_for {
 impl_all_for!(DiFactoryOnce, FnOnce, (self), (self));
 impl_all_for!(DiFactory, Fn, (&self), (self));
 
-/// This impl allows passing plain objects as factories
-impl<T: 'static> DiFactoryOnce<T, ()> for T {
+impl<F, O> DiFactoryOnce<O, ()> for F
+where
+    F: FnOnce() -> O + 'static,
+    O: 'static,
+{
     fn depends_on() -> &'static [TypeMeta] {
         &[]
     }
 
-    fn produce(self, _: &Services) -> T {
-        self
+    fn produce(self, _: &Services) -> O {
+        self()
+    }
+}
+
+
+impl<F, O> DiFactory<O, ()> for F
+where
+    F: Fn() -> O + 'static,
+    O: 'static,
+{
+    fn depends_on() -> &'static [TypeMeta] {
+        &[]
+    }
+
+    fn produce(&self, _: &Services) -> O {
+        self()
     }
 }
