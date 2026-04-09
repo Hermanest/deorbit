@@ -61,13 +61,31 @@ macro_rules! impl_all_for {
 impl_all_for!(DiFactoryOnce, FnOnce, (self), (self));
 impl_all_for!(DiFactory, Fn, (&self), (self));
 
-/// This impl allows passing plain objects as factories
-impl<T: 'static> DiFactoryOnce<T, ()> for T {
+impl<F, O> DiFactoryOnce<O, ()> for F
+where
+    F: FnOnce() -> O + 'static,
+    O: 'static,
+{
     fn depends_on() -> &'static [TypeMeta] {
         &[]
     }
 
-    fn produce(self, _: &Services) -> T {
-        self
+    fn produce(self, _: &Services) -> O {
+        self()
+    }
+}
+
+
+impl<F, O> DiFactory<O, ()> for F
+where
+    F: Fn() -> O + 'static,
+    O: 'static,
+{
+    fn depends_on() -> &'static [TypeMeta] {
+        &[]
+    }
+
+    fn produce(&self, _: &Services) -> O {
+        self()
     }
 }
