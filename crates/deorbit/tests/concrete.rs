@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use deorbit::{Error, FromDi, Service, ServicesBuilder};
+use deorbit::{Error, FromDi, Resolved, ServicesBuilder};
 
 #[test]
 fn binds_single() {
@@ -77,7 +77,7 @@ fn fails_duplicated() {
 fn fails_missing() {
     #[derive(FromDi)]
     struct Foo {
-        a: Service<i64>,
+        a: Resolved<i64>,
     }
 
     let mut builder = ServicesBuilder::new();
@@ -94,12 +94,12 @@ fn fails_missing() {
 fn fails_circular() {
     #[derive(FromDi)]
     struct BarCirc {
-        a: Service<FooCirc>,
+        a: Resolved<FooCirc>,
     }
 
     #[derive(FromDi)]
     struct FooCirc {
-        a: Service<BarCirc>,
+        a: Resolved<BarCirc>,
     }
 
     let mut builder = ServicesBuilder::new();

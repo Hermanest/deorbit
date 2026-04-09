@@ -23,7 +23,8 @@ macro_rules! impl_factory {
     ($name:ident, $closure:ident, ($($this:tt)+), ($($this_arg:tt)+), $($args:ident),*) => {
         impl<F, O, $($args),*> $name<O, ($($args),*,)> for F
         where
-            F: $closure($($crate::Service<$args>),*) -> O + 'static,
+            $($args: $crate::FromDi,)*
+            F: $closure($($args),*) -> O + 'static,
             O: 'static,
             $($args: 'static),*
         {
@@ -37,7 +38,7 @@ macro_rules! impl_factory {
 
             fn produce($($this)+, services: &$crate::Services) -> O {
                 ($($this_arg)+)(
-                    $(services.resolve::<$args>().expect("")),*
+                    $($args::produce(services)),*
                 )
             }
         }

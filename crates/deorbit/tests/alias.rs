@@ -1,5 +1,6 @@
-use deorbit::{Error, FromDi, Service, ServicesBuilder};
+use deorbit::{Error, FromDi, Resolved, ResolvedMany, ServicesBuilder};
 use std::any::Any;
+use std::fmt::Debug;
 use std::sync::Arc;
 
 #[test]
@@ -25,10 +26,7 @@ fn resolves_same_singleton_dyn() {
     let mut builder = ServicesBuilder::new();
 
     builder.bind::<i32>().singleton().from(10);
-    builder
-        .bind_alias::<dyn Any>()
-        .to::<i32>(|x| x)
-        .done();
+    builder.bind_alias::<dyn Any>().to::<i32>(|x| x).done();
 
     let services = builder.build().unwrap();
 
@@ -43,10 +41,7 @@ fn resolves_new_transient_dyn() {
     let mut builder = ServicesBuilder::new();
 
     builder.bind::<i32>().transient().from_fn(|| 10);
-    builder
-        .bind_alias::<dyn Any>()
-        .to::<i32>(|x| x)
-        .done();
+    builder.bind_alias::<dyn Any>().to::<i32>(|x| x).done();
 
     let services = builder.build().unwrap();
 
@@ -70,14 +65,35 @@ fn resolves_last_alias() {
 
     let res = builder.build().unwrap();
 
-    let last = res
-        .resolve_all::<dyn Any>()
-        .unwrap()
-        .next_back()
-        .unwrap();
+    let last = res.resolve_all::<dyn Any>().unwrap().next_back().unwrap();
     let single = res.resolve::<dyn Any>().unwrap();
 
     assert_eq!(Arc::as_ptr(&last), Arc::as_ptr(&single));
+}
+
+#[test]
+fn resolves_many() {
+    #[derive(FromDi)]
+    struct Foo {
+        other: ResolvedMany<dyn Any + Send + Sync>,
+    }
+
+    let mut builder = ServicesBuilder::new();
+
+    builder.bind::<Foo>().singleton().from_di();
+    builder.bind::<i32>().singleton().from(10);
+    builder.bind::<i64>().singleton().from(20);
+    builder
+        .bind_alias::<dyn Any + Send + Sync>()
+        .to::<i32>(|x| x)
+        .to::<i64>(|x| x)
+        .done();
+
+    let res = builder.build().unwrap();
+    let items = &res.resolve::<Foo>().unwrap().other;
+
+    assert!(items[0].clone().downcast::<i64>().is_ok_and(|x| *x == 20));
+    assert!(items[1].clone().downcast::<i32>().is_ok_and(|x| *x == 10));
 }
 
 #[test]
@@ -87,12 +103,12 @@ fn fails_circular_dyn() {
 
     #[derive(FromDi)]
     struct BarCirc {
-        a: Service<FooCirc>,
+        a: Resolved<FooCirc>,
     }
 
     #[derive(FromDi)]
     struct FooCirc {
-        a: Service<dyn IBarCirc>,
+        a: Resolved<dyn IBarCirc>,
     }
 
     let mut builder = ServicesBuilder::new();
