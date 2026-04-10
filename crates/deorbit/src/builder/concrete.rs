@@ -2,6 +2,7 @@ use crate::builder::BindingLifetime;
 use crate::builder::ServicesBuilder;
 use crate::from_di::{DiFactory, FromDi};
 use std::marker::PhantomData;
+use crate::DiFactoryOnce;
 
 /// The outermost builder containing no info but the type.
 #[derive(Debug)]
@@ -50,6 +51,14 @@ impl<'a, T: 'static> SingletonConcreteBuilder<'a, T> {
             self.builder.bind_self,
             BindingLifetime::singleton_from(instance),
             &[],
+        );
+    }
+    /// Finalizes the binding with an instance resolved via the specified factory.
+    pub fn from_fn<F: DiFactoryOnce<T, Args>, Args>(self, factory: F) {
+        self.builder.builder.add_type_binding::<T>(
+            self.builder.bind_self,
+            BindingLifetime::singleton_from_fn(factory),
+            F::depends_on(),
         );
     }
 }

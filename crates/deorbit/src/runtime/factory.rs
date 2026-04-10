@@ -1,72 +1,91 @@
-use crate::Services;
 use crate::from_di::{DiFactory, FromDi};
 use crate::resolver::Error;
 use crate::runtime::ErasedArc;
+use crate::{DiFactoryOnce, Services};
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 
+pub type ServiceFactory = Factory<Arc<dyn Fn(&Services) -> Result<ErasedArc, Error>>>;
+pub type ServiceFactoryOnce = Factory<Box<dyn FnOnce(&Services) -> Result<ErasedArc, Error>>>;
+
 #[derive(Clone)]
-pub struct ServiceFactory {
-    alloc: ServiceAllocator,
+pub struct Factory<F> {
+    alloc: ServiceAllocator<F>,
 }
 
 #[derive(Clone)]
-enum ServiceAllocator {
-    Container {
+enum ServiceAllocator<F> {
+    Static {
         fun: fn(&Services) -> Result<ErasedArc, Error>,
     },
-    Function {
-        fun: Arc<dyn Fn(&Services) -> Result<ErasedArc, Error>>,
-    },
-    Default {
-        fun: fn() -> ErasedArc,
+    Fn {
+        fun: F,
     },
 }
 
-impl Debug for ServiceFactory {
+impl<T> Debug for Factory<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         let stringified = match self.alloc {
-            ServiceAllocator::Container { .. } => "Container",
-            ServiceAllocator::Function { .. } => "Function",
-            ServiceAllocator::Default { .. } => "Default",
+            ServiceAllocator::Static { .. } => "Static",
+            ServiceAllocator::Fn { .. } => "Closure",
         };
 
         write!(f, "{}", stringified)
     }
 }
 
-impl ServiceFactory {
+impl<F> Factory<F> {
     pub fn from_container<T: 'static + FromDi>() -> Self {
         let wrapper = |x: &_| Ok(ErasedArc::from_instance(T::produce(x)));
 
         Self {
-            alloc: ServiceAllocator::Container { fun: wrapper },
-        }
-    }
-
-    pub fn from_fn<T: 'static, Args>(allocator: impl DiFactory<T, Args>) -> Self {
-        let wrapper = move |x: &_| Ok(ErasedArc::from_instance(allocator.produce(x)));
-
-        Self {
-            alloc: ServiceAllocator::Function {
-                fun: Arc::new(wrapper),
-            },
+            alloc: ServiceAllocator::Static { fun: wrapper },
         }
     }
 
     pub fn from_default<T: 'static + Default>() -> Self {
         Self {
-            alloc: ServiceAllocator::Default {
-                fun: || ErasedArc::from_instance(T::default()),
+            alloc: ServiceAllocator::Static {
+                fun: |_| Ok(ErasedArc::from_instance(T::default())),
+            },
+        }
+    }
+}
+
+impl ServiceFactory {
+    pub fn from_fn<T: 'static, Args>(allocator: impl DiFactory<T, Args>) -> Self {
+        let wrapper = move |x: &_| Ok(ErasedArc::from_instance(allocator.produce(x)));
+
+        Self {
+            alloc: ServiceAllocator::Fn {
+                fun: Arc::new(wrapper),
             },
         }
     }
 
     pub fn produce(&self, services: &Services) -> Result<ErasedArc, Error> {
         match &self.alloc {
-            ServiceAllocator::Container { fun } => fun(services),
-            ServiceAllocator::Function { fun } => fun(services),
-            ServiceAllocator::Default { fun } => Ok(fun()),
+            ServiceAllocator::Static { fun } => fun(services),
+            ServiceAllocator::Fn { fun } => fun(services),
+        }
+    }
+}
+
+impl ServiceFactoryOnce {
+    pub fn from_fn_once<T: 'static, Args>(allocator: impl DiFactoryOnce<T, Args>) -> Self {
+        let wrapper = move |x: &_| Ok(ErasedArc::from_instance(allocator.produce(x)));
+
+        Self {
+            alloc: ServiceAllocator::Fn {
+                fun: Box::new(wrapper),
+            },
+        }
+    }
+
+    pub fn produce(self, services: &Services) -> Result<ErasedArc, Error> {
+        match self.alloc {
+            ServiceAllocator::Static { fun } => fun(services),
+            ServiceAllocator::Fn { fun } => fun(services),
         }
     }
 }

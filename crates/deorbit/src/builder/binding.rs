@@ -1,11 +1,11 @@
 use crate::from_di::{DiFactory, FromDi};
-use crate::runtime::ServiceFactory;
+use crate::resolver::Error;
 use crate::runtime::TypeMeta;
 use crate::runtime::{ErasedArc, ErasedUnsizer};
+use crate::runtime::{ServiceFactory, ServiceFactoryOnce};
+use crate::{DiFactoryOnce, Services};
 use std::collections::HashMap;
 use std::fmt::Debug;
-use crate::resolver::Error;
-use crate::Services;
 
 #[derive(Debug)]
 pub struct Binding {
@@ -49,7 +49,7 @@ impl BindingKind {
 #[derive(Debug)]
 pub enum SingletonProvider {
     Instance(ErasedArc),
-    Factory(ServiceFactory),
+    Factory(ServiceFactoryOnce),
 }
 
 impl SingletonProvider {
@@ -76,13 +76,19 @@ impl BindingLifetime {
 
     pub fn singleton_from_di<T: 'static + FromDi>() -> Self {
         Self::Singleton(SingletonProvider::Factory(
-            ServiceFactory::from_container::<T>(),
+            ServiceFactoryOnce::from_container::<T>(),
         ))
     }
 
     pub fn singleton_from_default<T: 'static + Default>() -> Self {
         Self::Singleton(SingletonProvider::Factory(
-            ServiceFactory::from_default::<T>(),
+            ServiceFactoryOnce::from_default::<T>(),
+        ))
+    }
+
+    pub fn singleton_from_fn<T: 'static, Args>(factory: impl DiFactoryOnce<T, Args>) -> Self {
+        Self::Singleton(SingletonProvider::Factory(
+            ServiceFactoryOnce::from_fn_once(factory),
         ))
     }
 
