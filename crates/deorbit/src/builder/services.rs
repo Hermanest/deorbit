@@ -46,7 +46,7 @@ impl ServicesBuilder {
 
     pub(crate) fn add_alias_binding<T: ?Sized + 'static>(
         &mut self,
-        impls: HashMap<TypeMeta, ErasedUnsizer>,
+        impls: Vec<(TypeMeta, ErasedUnsizer)>,
     ) {
         let binding = Binding {
             ty: TypeMeta::of::<T>(),

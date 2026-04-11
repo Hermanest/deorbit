@@ -22,12 +22,12 @@ pub enum BindingKind {
         deps: &'static [TypeMeta],
     },
     Alias {
-        impls: HashMap<TypeMeta, ErasedUnsizer>,
+        impls: Vec<(TypeMeta, ErasedUnsizer)>,
     },
 }
 
 impl BindingKind {
-    pub fn unwrap_alias(self) -> HashMap<TypeMeta, ErasedUnsizer> {
+    pub fn unwrap_alias(self) -> Vec<(TypeMeta, ErasedUnsizer)> {
         match self {
             BindingKind::Type { .. } => {
                 panic!("Called unwrap_alias on a Type binding")
@@ -36,7 +36,7 @@ impl BindingKind {
         }
     }
 
-    pub fn unwrap_alias_mut(&mut self) -> &mut HashMap<TypeMeta, ErasedUnsizer> {
+    pub fn unwrap_alias_mut(&mut self) -> &mut Vec<(TypeMeta, ErasedUnsizer)> {
         match self {
             BindingKind::Type { .. } => {
                 panic!("Called unwrap_alias on a Type binding")

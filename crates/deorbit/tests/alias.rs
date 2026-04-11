@@ -72,28 +72,42 @@ fn resolves_last_alias() {
 }
 
 #[test]
-fn resolves_many() {
-    #[derive(FromDi)]
-    struct Foo {
-        other: ResolvedMany<dyn Any + Send + Sync>,
-    }
-
+fn maintains_alias_order() {
     let mut builder = ServicesBuilder::new();
 
-    builder.bind::<Foo>().singleton().from_di();
     builder.bind::<i32>().singleton().from(10);
     builder.bind::<i64>().singleton().from(20);
+    builder.bind::<i128>().singleton().from(30);
     builder
         .bind_alias::<dyn Any + Send + Sync>()
         .to::<i32>(|x| x)
         .to::<i64>(|x| x)
+        .to::<i128>(|x| x)
         .done();
 
     let res = builder.build().unwrap();
-    let items = &res.resolve::<Foo>().unwrap().other;
+    let items: Vec<_> = res.resolve_all::<dyn Any + Send + Sync>().unwrap().collect();
 
-    assert!(items[0].clone().downcast::<i64>().is_ok_and(|x| *x == 20));
-    assert!(items[1].clone().downcast::<i32>().is_ok_and(|x| *x == 10));
+    assert!(items[0].clone().downcast::<i32>().is_ok_and(|x| *x == 10));
+    assert!(items[1].clone().downcast::<i64>().is_ok_and(|x| *x == 20));
+    assert!(items[2].clone().downcast::<i128>().is_ok_and(|x| *x == 30));
+}
+
+#[test]
+fn maintains_alias_distinction() {
+    let mut builder = ServicesBuilder::new();
+
+    builder.bind::<i32>().singleton().from(0);
+    builder
+        .bind_alias::<dyn Any + Send + Sync>()
+        .to::<i32>(|x| x)
+        .to::<i32>(|x| x)
+        .done();
+
+    let res = builder.build().unwrap();
+    let items: Vec<_> = res.resolve_all::<dyn Any + Send + Sync>().unwrap().collect();
+
+    assert_eq!(items.len(), 1);
 }
 
 #[test]

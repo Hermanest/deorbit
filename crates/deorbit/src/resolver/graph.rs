@@ -21,7 +21,7 @@ pub fn merge_aliases(mut bindings: Vec<Binding>) -> Vec<Binding> {
 
     while cur_idx < bindings.len() {
         // Skip this binding if it's not an alias
-        if matches!(bindings[cur_idx].kind, BindingKind::Alias { .. }) {
+        if !matches!(bindings[cur_idx].kind, BindingKind::Alias { .. }) {
             cur_idx += 1;
             continue;
         }
@@ -32,9 +32,7 @@ pub fn merge_aliases(mut bindings: Vec<Binding>) -> Vec<Binding> {
         while inner_idx < bindings.len() {
             let binding = &bindings[inner_idx];
 
-            if cur_ty == binding.ty
-                && let BindingKind::Alias { .. } = binding.kind
-            {
+            if cur_ty == binding.ty && matches!(binding.kind, BindingKind::Alias { .. }) {
                 // Removing the duplicated alias
                 let binding = bindings.remove(inner_idx);
                 let impls = binding.kind.unwrap_alias();
@@ -46,10 +44,32 @@ pub fn merge_aliases(mut bindings: Vec<Binding>) -> Vec<Binding> {
             }
         }
 
+        // Removing duplicated alias members
+        let vec = bindings[cur_idx].kind.unwrap_alias_mut();
+        remove_duplicates(vec, |(x, _)| x);
+
         cur_idx += 1;
     }
 
     bindings
+}
+
+fn remove_duplicates<T, K: Eq>(vec: &mut Vec<T>, selector: impl Fn(&T) -> &K) {
+    let mut i = 0;
+
+    while i < vec.len() {
+        let mut j = i + 1;
+
+        while j < vec.len() {
+            if selector(&vec[i]) == selector(&vec[j]) {
+                vec.remove(j);
+            } else {
+                j += 1;
+            }
+        }
+
+        i += 1;
+    }
 }
 
 pub fn resolve_order(mut bindings: Vec<Binding>) -> Result<Vec<Binding>, Error> {
@@ -116,7 +136,7 @@ fn resolve_recursive(
             deps.iter().try_for_each(visit)?;
         }
         BindingKind::Alias { impls } => {
-            impls.keys().try_for_each(visit)?;
+            impls.iter().map(|(ty, _)| ty).try_for_each(visit)?;
         }
     }
 
@@ -124,4 +144,57 @@ fn resolve_recursive(
     node.state.set(NodeState::Visited);
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::runtime::ErasedUnsizer;
+    use std::any::Any;
+    use std::sync::Arc;
+
+    #[test]
+    fn test_merges_aliases() {
+        let bindings = vec![
+            Binding {
+                ty: TypeMeta::of::<dyn Any>(),
+                kind: BindingKind::Alias {
+                    impls: vec![(
+                        TypeMeta::of::<i32>(),
+                        ErasedUnsizer::try_from(|x: Arc<i32>| x as Arc<dyn Any>).unwrap(),
+                    )],
+                },
+            },
+            Binding {
+                ty: TypeMeta::of::<dyn Any>(),
+                kind: BindingKind::Alias {
+                    impls: vec![(
+                        TypeMeta::of::<i64>(),
+                        ErasedUnsizer::try_from(|x: Arc<i64>| x as Arc<dyn Any>).unwrap(),
+                    )],
+                },
+            },
+            Binding {
+                ty: TypeMeta::of::<dyn Any>(),
+                kind: BindingKind::Alias {
+                    impls: vec![(
+                        TypeMeta::of::<i128>(),
+                        ErasedUnsizer::try_from(|x: Arc<i128>| x as Arc<dyn Any>).unwrap(),
+                    )],
+                },
+            },
+        ];
+
+        let bindings = merge_aliases(bindings);
+
+        assert_eq!(bindings.len(), 1);
+
+        if let BindingKind::Alias { ref impls } = bindings[0].kind {
+            assert_eq!(impls[0].0, TypeMeta::of::<i32>());
+            assert_eq!(impls[1].0, TypeMeta::of::<i64>());
+            assert_eq!(impls[2].0, TypeMeta::of::<i128>());
+        } else {
+            panic!("Binding is not an alias");
+        }
+    }
 }
