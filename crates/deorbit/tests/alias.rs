@@ -1,4 +1,4 @@
-use deorbit::{Error, FromDi, Resolved, ResolvedMany, ServicesBuilder};
+use deorbit::{Error, FromDi, Resolved, ServicesBuilder};
 use std::any::Any;
 use std::fmt::Debug;
 use std::sync::Arc;

@@ -1,10 +1,9 @@
-use crate::Services;
-use crate::builder::{Binding, BindingKind, BindingLifetime};
 use crate::builder::alias::AliasBuilder;
 use crate::builder::concrete::ConcreteBuilder;
+use crate::builder::{Binding, BindingKind, BindingLifetime};
 use crate::resolver::Error;
 use crate::runtime::{ErasedUnsizer, TypeMeta};
-use std::collections::HashMap;
+use crate::Services;
 
 /// A builder for Services.
 #[derive(Default, Debug)]

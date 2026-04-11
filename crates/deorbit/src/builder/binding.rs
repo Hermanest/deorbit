@@ -4,7 +4,6 @@ use crate::runtime::TypeMeta;
 use crate::runtime::{ErasedArc, ErasedUnsizer};
 use crate::runtime::{ServiceFactory, ServiceFactoryOnce};
 use crate::{DiFactoryOnce, Services};
-use std::collections::HashMap;
 use std::fmt::Debug;
 
 #[derive(Debug)]
