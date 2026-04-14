@@ -1,8 +1,8 @@
 use crate::utils::resolve_crate;
 use proc_macro2::{Ident, TokenStream};
-use quote::{ToTokens, quote};
+use quote::{quote, ToTokens};
 use syn::{
-    Attribute, Error, Field, Fields, ItemStruct, Result, Type, parse_quote, spanned::Spanned,
+    parse_quote, spanned::Spanned, Attribute, Error, Fields, ItemStruct, Result, Type,
 };
 
 #[derive(Default, Copy, Clone, Eq, PartialEq)]
