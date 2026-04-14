@@ -6,7 +6,7 @@ mod resolver;
 mod runtime;
 
 pub use builder::ServicesBuilder;
-pub use deorbit_macro::FromDi;
+pub use deorbit_macro::from_di;
 pub use from_di::{DiFactory, DiFactoryOnce, FromDi};
 pub use mbmany::OneOrMany;
 pub use resolver::{Error, Resolved, ResolvedMany, Services};

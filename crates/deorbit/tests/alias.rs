@@ -2,6 +2,7 @@ use deorbit::{Error, FromDi, Resolved, ServicesBuilder};
 use std::any::Any;
 use std::fmt::Debug;
 use std::sync::Arc;
+use deorbit_macro::from_di;
 
 #[test]
 fn binds_dyn() {
@@ -115,14 +116,14 @@ fn fails_circular_dyn() {
     trait IBarCirc {}
     impl IBarCirc for BarCirc {}
 
-    #[derive(FromDi)]
+    #[from_di]
     struct BarCirc {
-        a: Resolved<FooCirc>,
+        a: FooCirc,
     }
 
-    #[derive(FromDi)]
+    #[from_di]
     struct FooCirc {
-        a: Resolved<dyn IBarCirc>,
+        a: dyn IBarCirc,
     }
 
     let mut builder = ServicesBuilder::new();

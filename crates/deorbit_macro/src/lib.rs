@@ -1,14 +1,17 @@
 use proc_macro::TokenStream;
-use syn::{DeriveInput, parse_macro_input};
+use syn::parse_macro_input;
+use syn::{
+    ItemStruct,
+};
 
 mod from_di;
 mod utils;
 
-#[proc_macro_derive(FromDi, attributes(di))]
-pub fn derive_from_di(input: TokenStream) -> proc_macro::TokenStream {
-    let input = parse_macro_input!(input as DeriveInput);
+#[proc_macro_attribute]
+pub fn from_di(_: TokenStream, input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as ItemStruct);
 
-    match from_di::expand_from_di(input.into()) {
+    match from_di::transform_from_di(input.into()) {
         Ok(ts) => ts.into(),
         Err(err) => err.to_compile_error().into(),
     }
