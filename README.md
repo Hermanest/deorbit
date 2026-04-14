@@ -31,15 +31,21 @@ fn bind() {
 ```
 
 ### Example 2
-With the help of FromDi trait we can make any service constructable from a DI instance. This enables instance-less wiring:
+With the help of the `FromDi` trait and the `from_di` macro we can make any service constructable from a DI instance. It enables automatic wiring:
 ```rust
-#[derive(FromDi)]
+#[from_di]
 struct Foo {
-    // Must either be a service or a type implementing Default
-    a: Service<i32>,
-    // Will use the Default trait
+    // from_di supports different kinds of resolution:
+    // #[di(one)] is the default one, it represents a single container service
+    // #[di(many)] does the same thing, but resolves all services of the specified type
+    // #[di(default)] assigns a default value to the field, requires T to implement Default
+
+    // Can either specify #[di(one)] explicitly or just omit it
+    a: i32,
+
+    // B will be zero because it's the default value
     #[di(default)]
-    b: i32,
+    b: i32
 }
 
 fn bind() {
