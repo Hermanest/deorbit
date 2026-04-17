@@ -6,17 +6,29 @@ version = 4
 name = "deorbit"
 version = "0.1.0"
 dependencies = [
- "deorbit_macro",
+ "deorbit-core",
+ "deorbit-macro",
 ]
 
 [[package]]
-name = "deorbit_macro"
+name = "deorbit-core"
+version = "0.1.0"
+
+[[package]]
+name = "deorbit-macro"
 version = "0.1.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "deorbit-tests"
+version = "0.1.0"
+dependencies = [
+ "deorbit",
 ]
 
 [[package]]

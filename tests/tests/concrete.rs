@@ -1,6 +1,5 @@
+use deorbit::{Error, FromDi, ServicesBuilder, from_di};
 use std::sync::Arc;
-use deorbit::{Error, FromDi, Resolved, ServicesBuilder};
-use deorbit_macro::from_di;
 
 #[test]
 fn binds_single() {

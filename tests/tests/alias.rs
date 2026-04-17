@@ -1,8 +1,6 @@
-use deorbit::{Error, FromDi, Resolved, ServicesBuilder};
+use deorbit::{Error, FromDi, ServicesBuilder, from_di};
 use std::any::Any;
-use std::fmt::Debug;
 use std::sync::Arc;
-use deorbit_macro::from_di;
 
 #[test]
 fn binds_dyn() {
@@ -87,7 +85,10 @@ fn maintains_alias_order() {
         .done();
 
     let res = builder.build().unwrap();
-    let items: Vec<_> = res.resolve_all::<dyn Any + Send + Sync>().unwrap().collect();
+    let items: Vec<_> = res
+        .resolve_all::<dyn Any + Send + Sync>()
+        .unwrap()
+        .collect();
 
     assert!(items[0].clone().downcast::<i32>().is_ok_and(|x| *x == 10));
     assert!(items[1].clone().downcast::<i64>().is_ok_and(|x| *x == 20));
@@ -106,7 +107,10 @@ fn maintains_alias_distinction() {
         .done();
 
     let res = builder.build().unwrap();
-    let items: Vec<_> = res.resolve_all::<dyn Any + Send + Sync>().unwrap().collect();
+    let items: Vec<_> = res
+        .resolve_all::<dyn Any + Send + Sync>()
+        .unwrap()
+        .collect();
 
     assert_eq!(items.len(), 1);
 }

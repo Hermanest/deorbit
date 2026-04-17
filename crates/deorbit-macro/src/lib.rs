@@ -1,8 +1,6 @@
 use proc_macro::TokenStream;
+use syn::ItemStruct;
 use syn::parse_macro_input;
-use syn::{
-    ItemStruct,
-};
 
 mod from_di;
 mod utils;
