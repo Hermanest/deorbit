@@ -1,4 +1,4 @@
-use deorbit::{Error, FromDi, ServicesBuilder, from_di};
+use deorbit::{Error, ServicesBuilder, from_di};
 use std::any::Any;
 use std::sync::Arc;
 

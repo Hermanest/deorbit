@@ -1,9 +1,7 @@
 use crate::utils::resolve_crate;
 use proc_macro2::{Ident, TokenStream};
-use quote::{quote, ToTokens};
-use syn::{
-    parse_quote, spanned::Spanned, Attribute, Error, Fields, ItemStruct, Result, Type,
-};
+use quote::{ToTokens, quote};
+use syn::{Attribute, Error, Fields, ItemStruct, Result, Type, parse_quote, spanned::Spanned};
 
 #[derive(Default, Copy, Clone, Eq, PartialEq)]
 enum FieldBindingKind {
@@ -38,7 +36,7 @@ pub fn transform_from_di(mut input: ItemStruct) -> Result<TokenStream> {
     let ident = &input.ident;
 
     let from_di_ts = quote! {
-        impl FromDi for #ident {
+        impl #crate_name::FromDi for #ident {
             fn depends_on() -> &'static [#crate_name::TypeMeta] {
                #deps
             }
