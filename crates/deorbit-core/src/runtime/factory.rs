@@ -55,9 +55,9 @@ impl<F> Factory<F> {
 impl ServiceFactory {
     pub fn from_fn<T: 'static, Args>(allocator: impl DiFactory<T, Args>) -> Self {
         let wrapper = move |x: &_| {
-            let instance = DiFactory::<T, Args>::produce(&allocator, x);
+            let instance = DiFactory::<T, Args>::produce(&allocator, x)?;
             let erased = ErasedArc::from_instance(instance);
-            
+
             Ok(erased)
         };
 
@@ -78,7 +78,12 @@ impl ServiceFactory {
 
 impl ServiceFactoryOnce {
     pub fn from_fn_once<T: 'static, Args>(allocator: impl DiFactoryOnce<T, Args>) -> Self {
-        let wrapper = move |x: &_| Ok(ErasedArc::from_instance(allocator.produce(x)));
+        let wrapper = move |x: &_| {
+            let instance = DiFactoryOnce::<T, Args>::produce(allocator, x)?;
+            let erased = ErasedArc::from_instance(instance);
+
+            Ok(erased)
+        };
 
         Self {
             alloc: ServiceAllocator::Fn {

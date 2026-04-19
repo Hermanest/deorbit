@@ -1,21 +1,22 @@
+use crate::Error;
 use crate::resolver::Services;
 use crate::runtime::TypeMeta;
 
 /// Represents an object that's capable of building itself from a DI instance.
 pub trait FromDi: Sized {
     fn depends_on() -> &'static [TypeMeta];
-    fn produce(services: &Services) -> Self;
+    fn produce(services: &Services) -> Result<Self, Error>;
 }
 
 /// Represents an object that's capable of building T from a DI instance.
 pub trait DiFactory<T, Args>: DiFactoryOnce<T, Args> {
-    fn produce(&self, services: &Services) -> T;
+    fn produce(&self, services: &Services) -> Result<T, Error>;
 }
 
 /// Represents an object that's capable of building T from a DI instance.
 pub trait DiFactoryOnce<T, Args>: 'static {
     fn depends_on() -> &'static [TypeMeta];
-    fn produce(self, services: &Services) -> T;
+    fn produce(self, services: &Services) -> Result<T, Error>;
 }
 
 macro_rules! impl_factory_once {
@@ -35,10 +36,10 @@ macro_rules! impl_factory_once {
                 }
             }
 
-            fn produce(self, services: &$crate::Services) -> O {
-                (self)(
-                    $($args::produce(services)),*
-                )
+            fn produce(self, services: &$crate::Services) -> Result<O, $crate::Error> {
+                Ok((self)(
+                    $($args::produce(services)?),*
+                ))
             }
         }
     };
@@ -53,10 +54,10 @@ macro_rules! impl_factory {
             O: 'static,
             $($args: 'static),*
         {
-            fn produce(&self, services: &$crate::Services) -> O {
-                (&self)(
-                    $($args::produce(services)),*
-                )
+            fn produce(&self, services: &$crate::Services) -> Result<O, $crate::Error> {
+                Ok((&self)(
+                    $($args::produce(services)?),*
+                ))
             }
         }
     };
@@ -88,18 +89,17 @@ where
         &[]
     }
 
-    fn produce(self, _: &Services) -> O {
-        self()
+    fn produce(self, _: &Services) -> Result<O, Error> {
+        Ok(self())
     }
 }
-
 
 impl<F, O> DiFactory<O, ()> for F
 where
     F: Fn() -> O + 'static,
     O: 'static,
 {
-    fn produce(&self, _: &Services) -> O {
-        self()
+    fn produce(&self, _: &Services) -> Result<O, Error> {
+        Ok(self())
     }
 }

@@ -53,3 +53,9 @@ impl Display for Error {
         }
     }
 }
+
+impl Error {
+    pub fn missing<T: ?Sized + 'static>() -> Self {
+        Error::Missing { type_meta: TypeMeta::of::<T>() }
+    }
+}

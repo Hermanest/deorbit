@@ -41,8 +41,8 @@ pub fn transform_from_di(mut input: ItemStruct) -> Result<TokenStream> {
                #deps
             }
 
-            fn produce(services: &#crate_name::Services) -> Self {
-                #initializer
+            fn produce(services: &#crate_name::Services) -> Result<Self, #crate_name::Error> {
+                Ok(#initializer)
             }
         }
     };
@@ -98,19 +98,17 @@ fn expand_field_initializer(field: &FieldBinding) -> Result<TokenStream> {
 
         FieldBindingKind::ResolveOne => {
             let field_type = field.ty.to_token_stream();
-            let err_msg = format!("Failed to resolve {}", field_type);
 
             quote! {
-                #ident: services.resolve().expect(#err_msg)
+                #ident: services.resolve().ok_or(Error::missing::<#field_type>())?
             }
         }
 
         FieldBindingKind::ResolveMany => {
             let field_type = field.ty.to_token_stream();
-            let err_msg = format!("Failed to resolve {}", field_type);
-
+            
             quote! {
-                #ident: services.resolve_all().expect(#err_msg).collect::<Vec<_>>()
+                #ident: services.resolve_all().ok_or(Error::missing::<#field_type>())?.collect::<Vec<_>>()
             }
         }
     };

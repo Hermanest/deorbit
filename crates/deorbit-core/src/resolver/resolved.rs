@@ -1,4 +1,4 @@
-use crate::{FromDi, Services, TypeMeta};
+use crate::{Error, FromDi, Services, TypeMeta};
 use std::sync::Arc;
 
 pub type ResolvedMany<T> = Vec<Arc<T>>;
@@ -9,10 +9,8 @@ impl<T: ?Sized + 'static> FromDi for Resolved<T> {
         &[]
     }
 
-    fn produce(services: &Services) -> Self {
-        services
-            .resolve::<T>()
-            .expect("Required dependency is missing")
+    fn produce(services: &Services) -> Result<Self, Error> {
+        services.resolve::<T>().ok_or(Error::missing::<T>())
     }
 }
 
@@ -21,10 +19,10 @@ impl<T: ?Sized + 'static> FromDi for ResolvedMany<T> {
         &[]
     }
 
-    fn produce(services: &Services) -> Self {
+    fn produce(services: &Services) -> Result<Self, Error> {
         services
             .resolve_all::<T>()
-            .expect("Required dependency is missing")
-            .collect()
+            .ok_or(Error::missing::<T>())
+            .map(|x| x.collect())
     }
 }
