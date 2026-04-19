@@ -36,7 +36,12 @@ impl<T> Debug for Factory<T> {
 
 impl<F> Factory<F> {
     pub fn from_container<T: 'static + FromDi>() -> Self {
-        let wrapper = |x: &_| Ok(ErasedArc::from_instance(T::produce(x)));
+        let wrapper = move |x: &_| {
+            let instance = T::produce(x)?;
+            let erased = ErasedArc::from_instance(instance);
+
+            Ok(erased)
+        };
 
         Self {
             alloc: ServiceAllocator::Static { fun: wrapper },

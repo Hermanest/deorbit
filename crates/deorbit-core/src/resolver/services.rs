@@ -124,8 +124,11 @@ impl Services {
 
         self.services.get(&type_meta).map(|x| match x {
             ImmutableBinding::Type { binding } => {
-                let iter = iter::once(binding)
-                    .map(|binding| self.get_instance(binding).coerce::<T>().unwrap());
+                let iter = iter::once(binding).map(|binding| {
+                    self.get_instance(binding)
+                        .coerce::<T>()
+                        .expect("Failed to coerce. This is a bug!")
+                });
 
                 EitherIter::Left(iter)
             }
@@ -135,7 +138,7 @@ impl Services {
 
                     unsizer
                         .unsize::<T>(arc)
-                        .expect("Failed while trying to unsize")
+                        .expect("Failed to unsize. This is a bug!")
                 });
 
                 EitherIter::Right(iter)

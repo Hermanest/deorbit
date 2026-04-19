@@ -1,4 +1,4 @@
-use deorbit::{Error, ServicesBuilder, from_di};
+use deorbit::{Error, ServicesBuilder, TypeMeta, from_di};
 use std::sync::Arc;
 
 #[test]
@@ -62,6 +62,21 @@ fn resolves_new_transient() {
 }
 
 #[test]
+fn binds_single_from_di() {
+    #[from_di]
+    struct Foo {}
+
+    let mut builder = ServicesBuilder::new();
+
+    builder.bind::<Foo>().singleton().from_di();
+
+    let services = builder.build().unwrap();
+    let res = services.resolve::<Foo>();
+
+    assert!(matches!(res, Some(..)));
+}
+
+#[test]
 fn fails_duplicated() {
     let mut builder = ServicesBuilder::new();
 
@@ -87,7 +102,9 @@ fn fails_missing() {
 
     let res = builder.build();
 
-    assert!(matches!(res, Err(Error::Missing { .. })));
+    assert!(
+        matches!(res, Err(Error::Missing { type_meta: meta }) if meta == TypeMeta::of::<i64>())
+    );
 }
 
 #[test]
