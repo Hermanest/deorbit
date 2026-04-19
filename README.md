@@ -39,6 +39,7 @@ struct Foo {
     // #[di(one)] is the default one, it represents a single container service
     // #[di(many)] does the same thing, but resolves all services of the specified type
     // #[di(default)] assigns a default value to the field, requires T to implement Default
+    // #[di(init = ...)] allows to specify a custom expression
 
     // Can either specify #[di(one)] explicitly or just omit it
     a: i32,
