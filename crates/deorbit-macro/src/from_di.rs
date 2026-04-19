@@ -1,14 +1,17 @@
 use crate::utils::resolve_crate;
 use proc_macro2::{Ident, TokenStream};
 use quote::{ToTokens, quote};
-use syn::{Attribute, Error, Fields, ItemStruct, Result, Type, parse_quote, spanned::Spanned};
+use syn::{
+    Attribute, Error, Expr, Fields, ItemStruct, Result, Type, parse_quote, spanned::Spanned,
+};
 
-#[derive(Default, Copy, Clone, Eq, PartialEq)]
+#[derive(Default, Clone)]
 enum FieldBindingKind {
     #[default]
     ResolveOne,
     ResolveMany,
     Default,
+    Init(Expr),
 }
 
 impl FieldBindingKind {
@@ -106,9 +109,15 @@ fn expand_field_initializer(field: &FieldBinding) -> Result<TokenStream> {
 
         FieldBindingKind::ResolveMany => {
             let field_type = field.ty.to_token_stream();
-            
+
             quote! {
                 #ident: services.resolve_all().ok_or(Error::missing::<#field_type>())?.collect::<Vec<_>>()
+            }
+        }
+
+        FieldBindingKind::Init(ref expr) => {
+            quote! {
+                #ident: #expr
             }
         }
     };
@@ -143,6 +152,7 @@ fn transform_and_collect_fields(
                 parse_quote!(#crate_name::ResolvedMany<#ty>)
             }
             FieldBindingKind::Default => ty.clone(),
+            FieldBindingKind::Init(..) => ty.clone(),
         };
 
         bindings.push(FieldBinding {
@@ -183,6 +193,19 @@ fn extract_field_attr(attrs: &mut Vec<Attribute>) -> Result<FieldBindingKind> {
             if meta.path.is_ident("many") {
                 kind = Some(FieldBindingKind::ResolveMany);
             };
+
+            if meta.path.is_ident("init") {
+                let value = meta.value().map_err(|x| {
+                    Error::new(
+                        di.span(),
+                        "init must be on the left side of an assignment expression",
+                    )
+                })?;
+                
+                let expr = value.parse()?;
+
+                kind = Some(FieldBindingKind::Init(expr));
+            }
 
             Ok(())
         })?;
