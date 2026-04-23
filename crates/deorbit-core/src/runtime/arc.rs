@@ -17,11 +17,17 @@ pub struct ErasedArc {
 }
 
 impl ErasedArc {
-    pub fn from_instance<T: 'static>(instance: T) -> Self {
+    pub fn from_instance<T>(instance: T) -> Self
+    where
+        T: Send + Sync + 'static,
+    {
         Self::from(Arc::new(instance))
     }
 
-    pub fn from<T: ?Sized + 'static>(instance: Arc<T>) -> Self {
+    pub fn from<T>(instance: Arc<T>) -> Self
+    where
+        T: ?Sized + Send + Sync + 'static,
+    {
         Self {
             type_id: TypeMeta::of::<T>(),
             data: unsafe {
@@ -53,7 +59,10 @@ impl ErasedArc {
         self.type_id
     }
 
-    pub fn coerce<T: ?Sized + 'static>(&self) -> Option<Arc<T>> {
+    pub fn coerce<T>(&self) -> Option<Arc<T>>
+    where
+        T: ?Sized + Send + Sync + 'static,
+    {
         if self.type_id == TypeMeta::of::<T>() {
             let coerced = unsafe {
                 let ptr = Self::cast_ptr::<T>(&self.data);
@@ -67,7 +76,7 @@ impl ErasedArc {
             None
         }
     }
-    
+
     pub fn as_ptr(arc: &Self) -> *const () {
         unsafe { Self::cast_ptr(&arc.data) }
     }
@@ -124,10 +133,10 @@ mod tests {
             }
         }
 
-        let arc: Arc<dyn MyTrait> = Arc::new(100);
+        let arc: Arc<dyn MyTrait + Send + Sync> = Arc::new(100);
 
         let erased = ErasedArc::from(arc);
-        let coerced = erased.coerce::<dyn MyTrait>().unwrap();
+        let coerced = erased.coerce::<dyn MyTrait + Send + Sync>().unwrap();
 
         assert_eq!(coerced.get(), 100);
     }

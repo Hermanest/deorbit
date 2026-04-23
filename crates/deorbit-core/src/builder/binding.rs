@@ -67,39 +67,60 @@ pub enum BindingLifetime {
 }
 
 impl BindingLifetime {
-    pub fn singleton_from<T: 'static>(service: T) -> Self {
+    pub fn singleton_from<T>(service: T) -> Self
+    where
+        T: Send + Sync + 'static,
+    {
         let arc = ErasedArc::from_instance(service);
 
         Self::Singleton(SingletonProvider::Instance(arc))
     }
 
-    pub fn singleton_from_di<T: 'static + FromDi>() -> Self {
+    pub fn singleton_from_di<T>() -> Self
+    where
+        T: Send + Sync + FromDi + 'static,
+    {
         Self::Singleton(SingletonProvider::Factory(
             ServiceFactoryOnce::from_container::<T>(),
         ))
     }
 
-    pub fn singleton_from_default<T: 'static + Default>() -> Self {
+    pub fn singleton_from_default<T>() -> Self
+    where
+        T: Send + Sync + Default + 'static,
+    {
         Self::Singleton(SingletonProvider::Factory(
             ServiceFactoryOnce::from_default::<T>(),
         ))
     }
 
-    pub fn singleton_from_fn<T: 'static, Args>(factory: impl DiFactoryOnce<T, Args>) -> Self {
+    pub fn singleton_from_fn<T, Args>(factory: impl DiFactoryOnce<T, Args>) -> Self
+    where
+        T: Send + Sync + 'static,
+    {
         Self::Singleton(SingletonProvider::Factory(
             ServiceFactoryOnce::from_fn_once(factory),
         ))
     }
 
-    pub fn transient_from_di<T: 'static + FromDi>() -> Self {
+    pub fn transient_from_di<T>() -> Self
+    where
+        T: Send + Sync + FromDi + 'static,
+    {
         Self::Transient(ServiceFactory::from_container::<T>())
     }
 
-    pub fn transient_from_default<T: 'static + Default>() -> Self {
+    pub fn transient_from_default<T>() -> Self
+    where
+        T: Send + Sync + Default + 'static,
+    {
         Self::Transient(ServiceFactory::from_default::<T>())
     }
 
-    pub fn transient_from_fn<T: 'static, Args>(factory: impl DiFactory<T, Args>) -> Self {
+    pub fn transient_from_fn<T, Args>(factory: impl DiFactory<T, Args>) -> Self
+    where
+        T: Send + Sync + 'static,
+    {
         Self::Transient(ServiceFactory::from_fn(factory))
     }
 }

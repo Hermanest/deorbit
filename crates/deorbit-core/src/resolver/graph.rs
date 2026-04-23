@@ -161,7 +161,8 @@ mod tests {
                 kind: BindingKind::Alias {
                     impls: vec![(
                         TypeMeta::of::<i32>(),
-                        ErasedUnsizer::try_from(|x: Arc<i32>| x as Arc<dyn Any>).unwrap(),
+                        ErasedUnsizer::try_from(|x: Arc<i32>| x as Arc<dyn Any + Send + Sync>)
+                            .unwrap(),
                     )],
                 },
             },
@@ -170,7 +171,8 @@ mod tests {
                 kind: BindingKind::Alias {
                     impls: vec![(
                         TypeMeta::of::<i64>(),
-                        ErasedUnsizer::try_from(|x: Arc<i64>| x as Arc<dyn Any>).unwrap(),
+                        ErasedUnsizer::try_from(|x: Arc<i64>| x as Arc<dyn Any + Send + Sync>)
+                            .unwrap(),
                     )],
                 },
             },
@@ -179,7 +181,8 @@ mod tests {
                 kind: BindingKind::Alias {
                     impls: vec![(
                         TypeMeta::of::<i128>(),
-                        ErasedUnsizer::try_from(|x: Arc<i128>| x as Arc<dyn Any>).unwrap(),
+                        ErasedUnsizer::try_from(|x: Arc<i128>| x as Arc<dyn Any + Send + Sync>)
+                            .unwrap(),
                     )],
                 },
             },

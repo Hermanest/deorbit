@@ -118,7 +118,7 @@ impl Services {
     /// If T is concrete, the iter will always contain a single element.
     pub fn resolve_all<T>(&self) -> Option<impl DoubleEndedIterator<Item = Resolved<T>>>
     where
-        T: ?Sized + 'static,
+        T: ?Sized + Send + Sync + 'static,
     {
         let type_meta = TypeMeta::of::<T>();
 
@@ -147,7 +147,10 @@ impl Services {
     }
 
     /// Returns the last binding of type T. For concrete T, there is always a single instance.
-    pub fn resolve<T: ?Sized + 'static>(&self) -> Option<Resolved<T>> {
+    pub fn resolve<T>(&self) -> Option<Resolved<T>>
+    where
+        T: ?Sized + Send + Sync + 'static,
+    {
         self.resolve_all().map(|mut x| x.next_back().unwrap())
     }
 
