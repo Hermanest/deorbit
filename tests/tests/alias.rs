@@ -25,12 +25,15 @@ fn resolves_same_singleton_dyn() {
     let mut builder = ServicesBuilder::new();
 
     builder.bind::<i32>().singleton().from(10);
-    builder.bind_alias::<dyn Any>().to::<i32>(|x| x).done();
+    builder
+        .bind_alias::<dyn Any + Send + Sync>()
+        .to::<i32>(|x| x)
+        .done();
 
     let services = builder.build().unwrap();
 
-    let res1 = services.resolve::<dyn Any>().unwrap();
-    let res2 = services.resolve::<dyn Any>().unwrap();
+    let res1 = services.resolve::<dyn Any + Send + Sync>().unwrap();
+    let res2 = services.resolve::<dyn Any + Send + Sync>().unwrap();
 
     assert_eq!(Arc::as_ptr(&res1), Arc::as_ptr(&res2));
 }
@@ -40,12 +43,15 @@ fn resolves_new_transient_dyn() {
     let mut builder = ServicesBuilder::new();
 
     builder.bind::<i32>().transient().from_fn(|| 10);
-    builder.bind_alias::<dyn Any>().to::<i32>(|x| x).done();
+    builder
+        .bind_alias::<dyn Any + Send + Sync>()
+        .to::<i32>(|x| x)
+        .done();
 
     let services = builder.build().unwrap();
 
-    let res1 = services.resolve::<dyn Any>().unwrap();
-    let res2 = services.resolve::<dyn Any>().unwrap();
+    let res1 = services.resolve::<dyn Any + Send + Sync>().unwrap();
+    let res2 = services.resolve::<dyn Any + Send + Sync>().unwrap();
 
     assert_ne!(Arc::as_ptr(&res1), Arc::as_ptr(&res2));
 }
@@ -57,15 +63,19 @@ fn resolves_last_alias() {
     builder.bind::<i32>().singleton().from(10);
     builder.bind::<i64>().singleton().from(20);
     builder
-        .bind_alias::<dyn Any>()
+        .bind_alias::<dyn Any + Send + Sync>()
         .to::<i32>(|x| x)
         .to::<i64>(|x| x)
         .done();
 
     let res = builder.build().unwrap();
 
-    let last = res.resolve_all::<dyn Any>().unwrap().next_back().unwrap();
-    let single = res.resolve::<dyn Any>().unwrap();
+    let last = res
+        .resolve_all::<dyn Any + Send + Sync>()
+        .unwrap()
+        .next_back()
+        .unwrap();
+    let single = res.resolve::<dyn Any + Send + Sync>().unwrap();
 
     assert_eq!(Arc::as_ptr(&last), Arc::as_ptr(&single));
 }
@@ -117,7 +127,7 @@ fn maintains_alias_distinction() {
 
 #[test]
 fn fails_circular_dyn() {
-    trait IBarCirc {}
+    trait IBarCirc: Send + Sync {}
     impl IBarCirc for BarCirc {}
 
     #[from_di]
@@ -150,11 +160,14 @@ fn fails_if_not_exposed() {
     let mut builder = ServicesBuilder::new();
 
     builder.bind::<i32>().not_self().singleton().from(10);
-    builder.bind_alias::<dyn Any>().to::<i32>(|x| x).done();
+    builder
+        .bind_alias::<dyn Any + Send + Sync>()
+        .to::<i32>(|x| x)
+        .done();
 
     let res = builder.build().unwrap();
 
-    let dy = res.resolve::<dyn Any>();
+    let dy = res.resolve::<dyn Any + Send + Sync>();
     let concrete = res.resolve::<i32>();
 
     assert!(matches!(dy, Some(..)));

@@ -4,7 +4,7 @@ use std::sync::Arc;
 pub type ResolvedMany<T> = Vec<Arc<T>>;
 pub type Resolved<T> = Arc<T>;
 
-impl<T: ?Sized + 'static> FromDi for Resolved<T> {
+impl<T: ?Sized + Send + Sync + 'static> FromDi for Resolved<T> {
     fn depends_on() -> &'static [TypeMeta] {
         &[]
     }
@@ -14,7 +14,7 @@ impl<T: ?Sized + 'static> FromDi for Resolved<T> {
     }
 }
 
-impl<T: ?Sized + 'static> FromDi for ResolvedMany<T> {
+impl<T: ?Sized + Send + Sync + 'static> FromDi for ResolvedMany<T> {
     fn depends_on() -> &'static [TypeMeta] {
         &[]
     }

@@ -1,9 +1,9 @@
+use crate::Services;
 use crate::builder::alias::AliasBuilder;
 use crate::builder::concrete::ConcreteBuilder;
 use crate::builder::{Binding, BindingKind, BindingLifetime};
 use crate::resolver::Error;
 use crate::runtime::{ErasedUnsizer, TypeMeta};
-use crate::Services;
 
 /// A builder for Services.
 #[derive(Default, Debug)]
@@ -25,7 +25,7 @@ impl ServicesBuilder {
         ConcreteBuilder::from_builder(self)
     }
 
-    pub fn bind_alias<T: ?Sized + 'static>(&mut self) -> AliasBuilder<'_, T> {
+    pub fn bind_alias<T: ?Sized + Send + Sync + 'static>(&mut self) -> AliasBuilder<'_, T> {
         AliasBuilder::from_builder(self)
     }
 
@@ -37,7 +37,11 @@ impl ServicesBuilder {
     ) {
         let binding = Binding {
             ty: TypeMeta::of::<T>(),
-            kind: BindingKind::Type { lifetime, deps, bind_self },
+            kind: BindingKind::Type {
+                lifetime,
+                deps,
+                bind_self,
+            },
         };
 
         self.bindings.push(binding);

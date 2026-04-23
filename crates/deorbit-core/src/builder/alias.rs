@@ -10,7 +10,7 @@ pub struct AliasBuilder<'a, Trait: ?Sized + 'static> {
     ph: PhantomData<Trait>,
 }
 
-impl<'a, Trait: ?Sized + 'static> AliasBuilder<'a, Trait> {
+impl<'a, Trait: ?Sized + Send + Sync + 'static> AliasBuilder<'a, Trait> {
     pub(crate) fn from_builder(builder: &'a mut ServicesBuilder) -> Self {
         Self {
             builder,
@@ -19,7 +19,7 @@ impl<'a, Trait: ?Sized + 'static> AliasBuilder<'a, Trait> {
         }
     }
 
-    pub fn to<T: 'static>(mut self, unsize: fn(Arc<T>) -> Arc<Trait>) -> Self {
+    pub fn to<T: Send + Sync + 'static>(mut self, unsize: fn(Arc<T>) -> Arc<Trait>) -> Self {
         // TODO: add proper option handling
         self.impls.push((
             TypeMeta::of::<T>(),

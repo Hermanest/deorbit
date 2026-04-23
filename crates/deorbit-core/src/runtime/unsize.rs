@@ -55,7 +55,10 @@ impl ErasedUnsizer {
         self.type_out
     }
 
-    pub fn unsize<K: ?Sized + 'static>(&self, arc: ErasedArc) -> Result<Arc<K>, Error> {
+    pub fn unsize<K>(&self, arc: ErasedArc) -> Result<Arc<K>, Error>
+    where
+        K: ?Sized + Send + Sync + 'static,
+    {
         if self.type_in != arc.ty() || self.type_out != TypeMeta::of::<K>() {
             return Err(Error::MismatchedTypes);
         }
@@ -86,7 +89,10 @@ mod tests {
         let unsizer =
             ErasedUnsizer::try_from(|x: Arc<i32>| x as Arc<dyn Any + Send + Sync>).unwrap();
 
-        assert!(matches!(unsizer.unsize::<dyn Any>(arc), Ok(..)));
+        assert!(matches!(
+            unsizer.unsize::<dyn Any + Send + Sync>(arc),
+            Ok(..)
+        ));
     }
 
     #[test]
@@ -96,7 +102,7 @@ mod tests {
             ErasedUnsizer::try_from(|x: Arc<i32>| x as Arc<dyn Any + Send + Sync>).unwrap();
 
         assert!(matches!(
-            unsizer.unsize::<dyn Any>(arc),
+            unsizer.unsize::<dyn Any + Send + Sync>(arc),
             Err(Error::MismatchedTypes)
         ));
     }
@@ -109,7 +115,7 @@ mod tests {
                 .unwrap();
 
         assert!(matches!(
-            unsizer.unsize::<dyn Any>(arc),
+            unsizer.unsize::<dyn Any + Send + Sync>(arc),
             Err(Error::MismatchedData)
         ));
     }

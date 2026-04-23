@@ -35,21 +35,16 @@ impl<T> Debug for Factory<T> {
 }
 
 impl<F> Factory<F> {
-<<<<<<< Updated upstream
-    pub fn from_container<T: 'static + FromDi>() -> Self {
+    pub fn from_container<T>() -> Self
+    where
+        T: Send + Sync + FromDi + 'static,
+    {
         let wrapper = move |x: &_| {
             let instance = T::produce(x)?;
             let erased = ErasedArc::from_instance(instance);
 
             Ok(erased)
         };
-=======
-    pub fn from_container<T>() -> Self
-    where
-        T: Send + Sync + FromDi + 'static,
-    {
-        let wrapper = |x: &_| Ok(ErasedArc::from_instance(T::produce(x)));
->>>>>>> Stashed changes
 
         Self {
             alloc: ServiceAllocator::Static { fun: wrapper },
@@ -69,21 +64,16 @@ impl<F> Factory<F> {
 }
 
 impl ServiceFactory {
-<<<<<<< Updated upstream
-    pub fn from_fn<T: 'static, Args>(allocator: impl DiFactory<T, Args>) -> Self {
+    pub fn from_fn<T, Args>(allocator: impl DiFactory<T, Args>) -> Self
+    where
+        T: Send + Sync + 'static,
+    {
         let wrapper = move |x: &_| {
             let instance = DiFactory::<T, Args>::produce(&allocator, x)?;
             let erased = ErasedArc::from_instance(instance);
 
             Ok(erased)
         };
-=======
-    pub fn from_fn<T, Args>(allocator: impl DiFactory<T, Args>) -> Self
-    where
-        T: Send + Sync + 'static,
-    {
-        let wrapper = move |x: &_| Ok(ErasedArc::from_instance(allocator.produce(x)));
->>>>>>> Stashed changes
 
         Self {
             alloc: ServiceAllocator::Fn {
@@ -101,21 +91,16 @@ impl ServiceFactory {
 }
 
 impl ServiceFactoryOnce {
-<<<<<<< Updated upstream
-    pub fn from_fn_once<T: 'static, Args>(allocator: impl DiFactoryOnce<T, Args>) -> Self {
+    pub fn from_fn_once<T, Args>(allocator: impl DiFactoryOnce<T, Args>) -> Self
+    where
+        T: Send + Sync + 'static,
+    {
         let wrapper = move |x: &_| {
             let instance = DiFactoryOnce::<T, Args>::produce(allocator, x)?;
             let erased = ErasedArc::from_instance(instance);
 
             Ok(erased)
         };
-=======
-    pub fn from_fn_once<T, Args>(allocator: impl DiFactoryOnce<T, Args>) -> Self
-    where
-        T: Send + Sync + 'static,
-    {
-        let wrapper = move |x: &_| Ok(ErasedArc::from_instance(allocator.produce(x)));
->>>>>>> Stashed changes
 
         Self {
             alloc: ServiceAllocator::Fn {
