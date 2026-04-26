@@ -1,6 +1,7 @@
 use crate::runtime::meta::TypeMeta;
 use std::mem;
 use std::ptr;
+use std::ptr::null;
 use std::sync::Arc;
 
 /// Allows storing heterogeneous data in the same collection.
@@ -9,11 +10,11 @@ pub struct ErasedArc {
     type_id: TypeMeta,
     // Here Arc might have a size of 16 bytes hence not safe to be stored
     // as a plain Arc because fat pointers don't have a guaranteed layout
-    data: [usize; 2],
+    data: [*const (); 2],
     // Used to decrement reference count for an arc
-    dec_fn: unsafe fn([usize; 2]),
+    dec_fn: unsafe fn([*const (); 2]),
     // Used to increment reference count for an arc
-    inc_fn: unsafe fn([usize; 2]),
+    inc_fn: unsafe fn([*const (); 2]),
 }
 
 impl ErasedArc {
@@ -32,7 +33,7 @@ impl ErasedArc {
             type_id: TypeMeta::of::<T>(),
             data: unsafe {
                 let raw = Arc::into_raw(instance);
-                let mut data = [0usize; 2];
+                let mut data = [null(); 2];
 
                 ptr::copy_nonoverlapping(
                     &raw as *const _ as *const u8, // Important to take a reference to the pointer itself
@@ -81,7 +82,7 @@ impl ErasedArc {
         unsafe { Self::cast_ptr(&arc.data) }
     }
 
-    unsafe fn cast_ptr<T: ?Sized>(from: &[usize; 2]) -> *const T {
+    unsafe fn cast_ptr<T: ?Sized>(from: &[*const (); 2]) -> *const T {
         unsafe { mem::transmute_copy(from) }
     }
 }
