@@ -1,3 +1,5 @@
+[![Crates.io Version](https://img.shields.io/crates/v/deorbit.svg)](https://crates.io/crates/deorbit)
+
 ## About
 Deorbit is a dependency framework for Rust. It aims for maximum automatization, so user does less to achieve the same result. 
 
