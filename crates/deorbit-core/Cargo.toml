@@ -6,3 +6,4 @@ description.workspace = true
 repository.workspace = true
 keywords.workspace = true
 version.workspace = true
+license.workspace = true
