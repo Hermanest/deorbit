@@ -20,10 +20,9 @@ impl<'a, Trait: ?Sized + Send + Sync + 'static> AliasBuilder<'a, Trait> {
     }
 
     pub fn to<T: Send + Sync + 'static>(mut self, unsize: fn(Arc<T>) -> Arc<Trait>) -> Self {
-        // TODO: add proper option handling
         self.impls.push((
             TypeMeta::of::<T>(),
-            ErasedUnsizer::try_from(unsize).unwrap(),
+            ErasedUnsizer::try_from(unsize).expect("The type you're trying to unsize to is sized"),
         ));
 
         self
