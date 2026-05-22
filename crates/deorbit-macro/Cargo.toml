@@ -1,7 +1,11 @@
 [package]
 name = "deorbit-macro"
-version = "0.1.0"
 edition = "2024"
+
+description.workspace = true
+repository.workspace = true
+keywords.workspace = true
+version.workspace = true
 
 [lib]
 proc-macro = true

@@ -1,4 +1,8 @@
 [package]
 name = "deorbit-core"
-version = "0.1.0"
 edition = "2024"
+
+description.workspace = true
+repository.workspace = true
+keywords.workspace = true
+version.workspace = true

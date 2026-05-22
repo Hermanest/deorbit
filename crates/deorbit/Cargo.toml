@@ -1,11 +1,15 @@
 [package]
 name = "deorbit"
-version = "0.1.0"
 edition = "2024"
 
+description.workspace = true
+repository.workspace = true
+keywords.workspace = true
+version.workspace = true
+
 [dependencies]
-deorbit-core = { path = "../deorbit-core" }
-deorbit-macro = { path = "../deorbit-macro", optional = true }
+deorbit-core = { version = "0.1.0", path = "../deorbit-core" }
+deorbit-macro = { version = "0.1.0", path = "../deorbit-macro", optional = true }
 
 [features]
 default = ["macros"]
