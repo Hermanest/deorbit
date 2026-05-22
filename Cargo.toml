@@ -6,5 +6,5 @@ resolver = "3"
 version = "0.1.0"
 description = "A dependency injection framework for Rust"
 license = "MIT"
-repository = "github.com/Hermanest/deorbit"
+repository = "https://github.com/Hermanest/deorbit"
 keywords = ["di", "di-container", "injection", "runtime", "macros"]
