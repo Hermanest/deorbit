@@ -69,7 +69,7 @@ fn bind() {
 ## Example 3
 One of the main features of the framework is an ability to work with traits, so here it is:
 ```rust
-trait Printable {
+trait Printable: Send + Sync {
     fn print(&self);
 }
 
