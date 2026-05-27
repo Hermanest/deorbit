@@ -54,7 +54,10 @@ impl<'a, T: Send + Sync + 'static> SingletonConcreteBuilder<'a, T> {
         );
     }
     /// Finalizes the binding with an instance resolved via the specified factory.
-    pub fn from_fn<F: DiFactoryOnce<T, Args>, Args>(self, factory: F) {
+    pub fn from_fn<F, Args>(self, factory: F)
+    where
+        F: DiFactoryOnce<T, Args> + Send + Sync
+    {
         self.builder.builder.add_type_binding::<T>(
             self.builder.bind_self,
             BindingLifetime::singleton_from_fn(factory),
@@ -95,7 +98,10 @@ pub struct TransientConcreteBuilder<'a, T: 'static> {
 #[allow(clippy::wrong_self_convention)]
 impl<'a, T: Send + Sync + 'static> TransientConcreteBuilder<'a, T> {
     /// Finalizes the binding with an instance resolved via the specified factory.
-    pub fn from_fn<F: DiFactory<T, Args>, Args>(self, factory: F) {
+    pub fn from_fn<F, Args>(self, factory: F)
+    where
+        F: DiFactory<T, Args> + Send + Sync
+    {
         self.builder.builder.add_type_binding::<T>(
             self.builder.bind_self,
             BindingLifetime::transient_from_fn(factory),

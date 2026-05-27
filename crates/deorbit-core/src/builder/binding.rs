@@ -94,8 +94,9 @@ impl BindingLifetime {
         ))
     }
 
-    pub fn singleton_from_fn<T, Args>(factory: impl DiFactoryOnce<T, Args>) -> Self
+    pub fn singleton_from_fn<F, T, Args>(factory: F) -> Self
     where
+        F: DiFactoryOnce<T, Args> + Send + Sync,
         T: Send + Sync + 'static,
     {
         Self::Singleton(SingletonProvider::Factory(
@@ -117,8 +118,9 @@ impl BindingLifetime {
         Self::Transient(ServiceFactory::from_default::<T>())
     }
 
-    pub fn transient_from_fn<T, Args>(factory: impl DiFactory<T, Args>) -> Self
+    pub fn transient_from_fn<F, T, Args>(factory: F) -> Self
     where
+        F: DiFactory<T, Args> + Send + Sync,
         T: Send + Sync + 'static,
     {
         Self::Transient(ServiceFactory::from_fn(factory))

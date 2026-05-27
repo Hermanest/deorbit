@@ -5,8 +5,8 @@ use crate::{DiFactoryOnce, Services};
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 
-pub type ServiceFactory = Factory<Arc<dyn Fn(&Services) -> Result<ErasedArc, Error>>>;
-pub type ServiceFactoryOnce = Factory<Box<dyn FnOnce(&Services) -> Result<ErasedArc, Error>>>;
+pub type ServiceFactory = Factory<Arc<dyn Fn(&Services) -> Result<ErasedArc, Error> + Send + Sync>>;
+pub type ServiceFactoryOnce = Factory<Box<dyn FnOnce(&Services) -> Result<ErasedArc, Error> + Send + Sync>>;
 
 #[derive(Clone)]
 pub struct Factory<F> {
@@ -64,8 +64,9 @@ impl<F> Factory<F> {
 }
 
 impl ServiceFactory {
-    pub fn from_fn<T, Args>(allocator: impl DiFactory<T, Args>) -> Self
+    pub fn from_fn<F, T, Args>(allocator: F) -> Self
     where
+        F: DiFactory<T, Args> + Send + Sync,
         T: Send + Sync + 'static,
     {
         let wrapper = move |x: &_| {
@@ -91,8 +92,9 @@ impl ServiceFactory {
 }
 
 impl ServiceFactoryOnce {
-    pub fn from_fn_once<T, Args>(allocator: impl DiFactoryOnce<T, Args>) -> Self
+    pub fn from_fn_once<F, T, Args>(allocator: F) -> Self
     where
+        F: DiFactoryOnce<T, Args> + Send + Sync,
         T: Send + Sync + 'static,
     {
         let wrapper = move |x: &_| {

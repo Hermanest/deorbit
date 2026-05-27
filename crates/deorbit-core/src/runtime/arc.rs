@@ -17,6 +17,9 @@ pub struct ErasedArc {
     inc_fn: unsafe fn([*const (); 2]),
 }
 
+unsafe impl Send for ErasedArc {}
+unsafe impl Sync for ErasedArc {}
+
 impl ErasedArc {
     pub fn from_instance<T>(instance: T) -> Self
     where

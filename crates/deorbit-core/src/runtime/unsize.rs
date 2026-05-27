@@ -16,6 +16,9 @@ pub struct ErasedUnsizer {
     erased_func: *const (),
 }
 
+unsafe impl Send for ErasedUnsizer {}
+unsafe impl Sync for ErasedUnsizer {}
+
 type TypedFunc<T, K> = fn(Arc<T>) -> Arc<K>;
 type ErasedFunc<K> = fn(ErasedArc, typed: *const ()) -> Arc<K>;
 
