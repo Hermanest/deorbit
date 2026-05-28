@@ -34,7 +34,7 @@ pub fn transform_from_di(mut input: ItemStruct) -> Result<TokenStream> {
     let crate_name = resolve_crate();
     let fields = transform_and_collect_fields(&crate_name, &mut input)?;
 
-    let initializer = expand_initializer(&fields)?;
+    let initializer = expand_initializer(&crate_name, &fields)?;
     let deps = expand_dependencies(&crate_name, &fields)?;
     let ident = &input.ident;
 
@@ -74,10 +74,10 @@ fn expand_dependencies(
     Ok(ts)
 }
 
-fn expand_initializer(fields: &Vec<FieldBinding>) -> Result<TokenStream> {
+fn expand_initializer(crate_name: &TokenStream, fields: &Vec<FieldBinding>) -> Result<TokenStream> {
     let field_inits = fields
         .iter()
-        .map(expand_field_initializer)
+        .map(|x| expand_field_initializer(crate_name, x))
         .collect::<Result<Vec<_>>>()?;
 
     let ts = quote! {
@@ -89,7 +89,7 @@ fn expand_initializer(fields: &Vec<FieldBinding>) -> Result<TokenStream> {
     Ok(ts)
 }
 
-fn expand_field_initializer(field: &FieldBinding) -> Result<TokenStream> {
+fn expand_field_initializer(crate_name: &TokenStream, field: &FieldBinding) -> Result<TokenStream> {
     let ident = &field.ident;
 
     let ts = match field.kind {
@@ -103,7 +103,7 @@ fn expand_field_initializer(field: &FieldBinding) -> Result<TokenStream> {
             let field_type = field.ty.to_token_stream();
 
             quote! {
-                #ident: services.resolve().ok_or(Error::missing::<#field_type>())?
+                #ident: services.resolve().ok_or(#crate_name::Error::missing::<#field_type>())?
             }
         }
 
@@ -111,7 +111,7 @@ fn expand_field_initializer(field: &FieldBinding) -> Result<TokenStream> {
             let field_type = field.ty.to_token_stream();
 
             quote! {
-                #ident: services.resolve_all().ok_or(Error::missing::<#field_type>())?.collect::<Vec<_>>()
+                #ident: services.resolve_all().ok_or(#crate_name::Error::missing::<#field_type>())?.collect::<Vec<_>>()
             }
         }
 
@@ -201,7 +201,7 @@ fn extract_field_attr(attrs: &mut Vec<Attribute>) -> Result<FieldBindingKind> {
                         "init must be on the left side of an assignment expression",
                     )
                 })?;
-                
+
                 let expr = value.parse()?;
 
                 kind = Some(FieldBindingKind::Init(expr));
