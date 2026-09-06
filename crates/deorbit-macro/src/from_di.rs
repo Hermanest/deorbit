@@ -1,9 +1,17 @@
 use crate::utils::resolve_crate;
 use proc_macro2::{Ident, TokenStream};
 use quote::{ToTokens, quote};
+use syn::parse::Parser;
+use syn::punctuated::Punctuated;
 use syn::{
-    Attribute, Error, Expr, Fields, ItemStruct, Result, Type, parse_quote, spanned::Spanned,
+    Attribute, Error, Expr, Fields, ItemStruct, Meta, Result, Token, Type, parse_quote,
+    spanned::Spanned,
 };
+
+#[derive(Default)]
+struct FromDiParams {
+    postfix: Option<Expr>,
+}
 
 #[derive(Default, Clone)]
 enum FieldBindingKind {
@@ -30,13 +38,27 @@ struct FieldBinding {
     kind: FieldBindingKind,
 }
 
-pub fn transform_from_di(mut input: ItemStruct) -> Result<TokenStream> {
+pub fn transform_from_di(meta: TokenStream, mut input: ItemStruct) -> Result<TokenStream> {
     let crate_name = resolve_crate();
     let fields = transform_and_collect_fields(&crate_name, &mut input)?;
+    let params = parse_attrs(meta)?;
 
     let initializer = expand_initializer(&crate_name, &fields)?;
     let deps = expand_dependencies(&crate_name, &fields)?;
     let ident = &input.ident;
+
+    let postfix = params
+        .postfix
+        .map(|x| {
+            // Using a function with explicit types to allow passing lambdas without type specification
+            quote! {{
+                fn invoke_inferred(this: &mut #ident, f: impl Fn(&mut #ident)) {
+                    f(this);
+                }
+                invoke_inferred(&mut this, #x);
+            }}
+        })
+        .unwrap_or_default();
 
     let from_di_ts = quote! {
         impl #crate_name::FromDi for #ident {
@@ -45,7 +67,11 @@ pub fn transform_from_di(mut input: ItemStruct) -> Result<TokenStream> {
             }
 
             fn produce(services: &#crate_name::Services) -> Result<Self, #crate_name::Error> {
-                Ok(#initializer)
+                let mut this = #initializer;
+
+                #postfix
+
+                Ok(this)
             }
         }
     };
@@ -54,6 +80,38 @@ pub fn transform_from_di(mut input: ItemStruct) -> Result<TokenStream> {
         #input
         #from_di_ts
     })
+}
+
+fn parse_attrs(tt: TokenStream) -> Result<FromDiParams> {
+    let parser = Punctuated::<Meta, Token![,]>::parse_terminated;
+    let args = parser.parse2(tt)?;
+
+    let mut params = FromDiParams::default();
+
+    for meta in args {
+        let Meta::NameValue(nv) = meta else {
+            continue;
+        };
+
+        if nv.path.is_ident("postfix") {
+            match &nv.value {
+                Expr::Path(_) | Expr::Closure(_) => {
+                    params.postfix = Some(nv.value);
+                }
+
+                _ => {
+                    return Err(Error::new_spanned(
+                        &nv.value,
+                        "Expected a function path (e.g., Self::postfix) or a closure",
+                    ));
+                }
+            }
+        } else {
+            return Err(Error::new_spanned(&nv.path, "Unknown attribute key"));
+        }
+    }
+
+    Ok(params)
 }
 
 fn expand_dependencies(
