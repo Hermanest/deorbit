@@ -19,6 +19,7 @@ enum FieldBindingKind {
     ResolveOne,
     ResolveMany,
     Default,
+    Clone,
     Init(Expr),
 }
 
@@ -27,6 +28,7 @@ impl FieldBindingKind {
         match self {
             FieldBindingKind::ResolveOne => true,
             FieldBindingKind::ResolveMany => true,
+            FieldBindingKind::Clone => true,
             _ => false,
         }
     }
@@ -157,6 +159,14 @@ fn expand_field_initializer(crate_name: &TokenStream, field: &FieldBinding) -> R
             }
         }
 
+        FieldBindingKind::Clone => {
+            let field_type = field.ty.to_token_stream();
+
+            quote! {
+                #ident: services.resolve::<#field_type>().ok_or(#crate_name::Error::missing::<#field_type>())?.deref().clone()
+            }
+        }
+
         FieldBindingKind::ResolveOne => {
             let field_type = field.ty.to_token_stream();
 
@@ -209,8 +219,9 @@ fn transform_and_collect_fields(
             FieldBindingKind::ResolveMany => {
                 parse_quote!(#crate_name::ResolvedMany<#ty>)
             }
-            FieldBindingKind::Default => ty.clone(),
-            FieldBindingKind::Init(..) => ty.clone(),
+            FieldBindingKind::Default | FieldBindingKind::Clone | FieldBindingKind::Init(..) => {
+                ty.clone()
+            }
         };
 
         bindings.push(FieldBinding {
@@ -242,6 +253,10 @@ fn extract_field_attr(attrs: &mut Vec<Attribute>) -> Result<FieldBindingKind> {
 
             if meta.path.is_ident("default") {
                 kind = Some(FieldBindingKind::Default);
+            };
+
+            if meta.path.is_ident("clone") {
+                kind = Some(FieldBindingKind::Clone);
             };
 
             if meta.path.is_ident("one") {

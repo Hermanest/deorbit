@@ -1,5 +1,8 @@
 use deorbit::{Error, ServicesBuilder, TypeMeta, from_di};
+use std::cell::Cell;
+use std::ops::Deref;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 #[test]
 fn binds_single() {
@@ -127,4 +130,44 @@ fn fails_circular() {
     let res = builder.build();
 
     assert!(matches!(res, Err(Error::Circular { .. })));
+}
+
+#[test]
+fn clones_binding() {
+    struct Cloneable {
+        value: i32,
+        flag: AtomicBool,
+    }
+
+    impl Clone for Cloneable {
+        fn clone(&self) -> Self {
+            self.flag.swap(true, Ordering::Relaxed);
+
+            Self {
+                value: self.value,
+                flag: AtomicBool::new(false),
+            }
+        }
+    }
+
+    #[from_di]
+    struct Bar {
+        #[di(clone)]
+        opt: Cloneable,
+    }
+
+    let mut builder = ServicesBuilder::new();
+
+    builder.bind::<Bar>().singleton().from_di();
+    builder.bind::<Cloneable>().singleton().from(Cloneable {
+        value: 10,
+        flag: AtomicBool::new(false),
+    });
+
+    let res = builder.build().unwrap();
+    let bar = res.resolve::<Bar>().unwrap();
+    let cloneable = res.resolve::<Cloneable>().unwrap();
+
+    assert_eq!(bar.opt.flag.load(Ordering::Relaxed), false);
+    assert_eq!(cloneable.flag.load(Ordering::Relaxed), true);
 }
