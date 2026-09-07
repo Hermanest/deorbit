@@ -133,6 +133,24 @@ fn fails_circular() {
 }
 
 #[test]
+fn invokes_postfix() {
+    #[from_di(postfix = |x| x.opt = 10)]
+    struct Bar {
+        #[di(default)]
+        opt: i64,
+    }
+
+    let mut builder = ServicesBuilder::new();
+
+    builder.bind::<Bar>().singleton().from_di();
+
+    let res = builder.build().unwrap();
+    let bar = res.resolve::<Bar>().unwrap();
+
+    assert_eq!(bar.opt, 10)
+}
+
+#[test]
 fn clones_binding() {
     struct Cloneable {
         value: i32,
