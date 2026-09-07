@@ -69,6 +69,8 @@ pub fn transform_from_di(meta: TokenStream, mut input: ItemStruct) -> Result<Tok
             }
 
             fn produce(services: &#crate_name::Services) -> Result<Self, #crate_name::Error> {
+                use std::ops::Deref;
+
                 let mut this = #initializer;
 
                 #postfix
