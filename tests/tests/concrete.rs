@@ -1,6 +1,4 @@
 use deorbit::{Error, ServicesBuilder, TypeMeta, from_di};
-use std::cell::Cell;
-use std::ops::Deref;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
